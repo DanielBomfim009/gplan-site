@@ -2261,6 +2261,21 @@
       document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
     }
 
+    function refreshAppViews() {
+      updateDashboard();
+      renderTransactions();
+      renderControlPage();
+      renderCalendar();
+      renderReports();
+      renderSettingsAccounts();
+      renderBudgetSettings();
+    }
+
+    function persistAndRefresh() {
+      refreshAppViews();
+      DB.save();
+    }
+
     function syncBodyLock() {
       const hasActiveLayer = document.querySelector('.modal-overlay.active') || document.querySelector('.sidebar.active');
       document.body.style.overflow = hasActiveLayer ? 'hidden' : '';
@@ -2616,7 +2631,12 @@
         }
       },
       save: () => {
-        localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
+        try {
+          localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
+        } catch (error) {
+          console.warn('Não foi possível salvar localmente:', error);
+          setSyncStatus('Alteração aplicada. Salvamento local indisponível.', 'warn');
+        }
         if (!isApplyingRemoteState) queueCloudSave();
       }
     };
@@ -3723,13 +3743,8 @@
         showToast('Transação salva com sucesso!');
       }
       
-      DB.save();
       closeModalTx();
-      updateDashboard();
-      renderTransactions();
-      renderControlPage();
-      renderCalendar();
-      renderReports();
+      persistAndRefresh();
     }
 
     function editTransaction(id) {
@@ -3786,24 +3801,16 @@
         showToast('Transação excluída', 'error');
       }
       
-      DB.save();
       closeDeleteModal();
       closeModalTx();
-      updateDashboard();
-      renderTransactions();
-      renderControlPage();
-      renderCalendar();
-      renderReports();
+      persistAndRefresh();
     }
 
     function toggleTransactionStatus(id) {
       const tx = State.transactions.find(t => t.id === id);
       if(tx) {
         tx.status = tx.status === 'paid' ? 'pending' : 'paid';
-        DB.save();
-        renderControlPage();
-        updateDashboard();
-        renderReports();
+        persistAndRefresh();
         showToast('Status atualizado!');
       }
     }
@@ -3826,9 +3833,9 @@
         State.goals.push(goal);
       }
       
-      DB.save();
       closeModalGoal();
       renderGoals();
+      persistAndRefresh();
       showToast('Meta salva com sucesso!');
     }
 
@@ -3841,19 +3848,19 @@
       const goal = State.goals.find(g => g.id === id);
       if(goal) {
         goal.current = Math.min(goal.current + amount, goal.target);
-        DB.save();
       }
       
       closeModalGoalAdd();
       renderGoals();
+      persistAndRefresh();
       showToast('Valor adicionado a meta!');
     }
 
     function deleteGoal(id) {
       if(confirm('Excluir esta meta?')) {
         State.goals = State.goals.filter(g => g.id !== id);
-        DB.save();
         renderGoals();
+        persistAndRefresh();
         showToast('Meta excluída', 'error');
       }
     }
@@ -5071,10 +5078,8 @@
 
     function updateBudget(categoryId, value) {
       State.budgets[categoryId] = parseMoney(value);
-      DB.save();
       renderBudgetSettings();
-      updateDashboard();
-      renderReports();
+      persistAndRefresh();
     }
 
     function addAccount() {
@@ -5086,9 +5091,9 @@
       const color = palette[State.accounts.length % palette.length];
       State.accounts.push({ id, name: name.trim(), type: type.trim(), color });
       State.selectedAccountId = id;
-      DB.save();
       renderSettingsAccounts();
       populateAccountOptions();
+      persistAndRefresh();
       showToast('Conta adicionada com sucesso!');
     }
 
@@ -5113,7 +5118,7 @@
         reader.onload = (e) => {
           State.profile.photo = e.target.result;
           updateProfilePhoto();
-          DB.save();
+          persistAndRefresh();
           showToast('Foto de perfil atualizada!');
         };
         reader.readAsDataURL(file);
@@ -5157,8 +5162,8 @@
     async function saveProfile() {
       State.profile.name = document.getElementById('settings-name').value;
       State.profile.email = document.getElementById('settings-email').value;
-      DB.save();
       updateAllAvatars();
+      persistAndRefresh();
       try {
         const client = await ensureActiveSupabase();
         if (client && currentSessionUser?.id) {
@@ -5205,15 +5210,11 @@
             photo: null
           });
           applyHydratedState(parsed);
-          DB.save();
-          updateDashboard();
-          renderTransactions();
+          refreshAppViews();
           renderGoals();
-          renderCalendar();
-          renderControlPage();
-          renderReports();
           populateAccountOptions();
           updateAllAvatars();
+          DB.save();
           await syncCloudNow(true);
           showToast('Cópia de segurança importada com sucesso!');
         } catch (error) {
@@ -5233,15 +5234,11 @@
           name: currentAccessProfile?.full_name || currentSessionUser?.email?.split('@')[0] || '',
           photo: null
         });
-        DB.save();
-        updateDashboard();
-        renderTransactions();
+        refreshAppViews();
         renderGoals();
-        renderCalendar();
-        renderControlPage();
-        renderReports();
         populateAccountOptions();
         updateAllAvatars();
+        DB.save();
         showToast('Todos os dados foram apagados.', 'error');
       }
     }
