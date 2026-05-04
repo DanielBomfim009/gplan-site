@@ -1156,8 +1156,17 @@
               <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setControlPeriod('week', 'Esta semana')">Esta semana</button>
               <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setControlPeriod('year', 'Este ano')">Este ano</button>
               <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setControlPeriod('all', 'Todo período')">Todo período</button>
+              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 text-brand font-semibold" onclick="setControlPeriod('custom', 'Mês específico')">Mês específico</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="control-month-picker" class="hidden mt-3">
+        <div class="month-selector">
+          <div class="month-btn" onclick="changeControlMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+          <input type="month" id="control-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateControlFromInput(this.value)">
+          <div class="month-btn" onclick="changeControlMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
         </div>
       </div>
       
@@ -1963,6 +1972,7 @@
       isRecurring: false,
       controlFilter: 'all',
       controlPeriod: 'month',
+      controlCustomDate: new Date(),
       dashboardPeriod: 'month',
       dashboardCustomDate: new Date(),
       txCustomDate: new Date(),
@@ -2123,6 +2133,7 @@
     const cloneDefaultState = () => ({
       ...JSON.parse(JSON.stringify(DEFAULT_STATE_TEMPLATE)),
       dashboardCustomDate: new Date(),
+      controlCustomDate: new Date(),
       txCustomDate: new Date(),
       reportCustomDate: new Date()
     });
@@ -2480,6 +2491,7 @@
     function applyHydratedState(parsed) {
       Object.assign(State, parsed);
       State.dashboardCustomDate = State.dashboardCustomDate ? new Date(State.dashboardCustomDate) : new Date();
+      State.controlCustomDate = State.controlCustomDate ? new Date(State.controlCustomDate) : new Date();
       State.txCustomDate = State.txCustomDate ? new Date(State.txCustomDate) : new Date();
       State.reportCustomDate = State.reportCustomDate ? new Date(State.reportCustomDate) : new Date();
       State.transactions = (State.transactions || []).map(t => ({
@@ -3391,7 +3403,7 @@
       if(page === 'goals') renderGoals();
       if(page === 'reports') { renderReports(); initReportDatePicker(); }
       if(page === 'settings') loadProfileToSettings();
-      if(page === 'control') renderControlPage();
+      if(page === 'control') { renderControlPage(); initControlDatePicker(); }
       if(page === 'dashboard') updateDashboard();
       if(page === 'admin') loadAdminPage();
       
@@ -3465,6 +3477,36 @@
       renderTransactions();
     }
 
+    // FUNÇÕES DO SELETOR DE MÊS (CONTROLE)
+    function initControlDatePicker() {
+      const input = document.getElementById('control-date-input');
+      const picker = document.getElementById('control-month-picker');
+      if (!input || !picker) return;
+      const y = State.controlCustomDate.getFullYear();
+      const m = String(State.controlCustomDate.getMonth() + 1).padStart(2, '0');
+      input.value = `${y}-${m}`;
+      picker.classList.toggle('hidden', State.controlPeriod !== 'custom');
+    }
+
+    function updateControlFromInput(val) {
+      if(!val) return;
+      const [y, m] = val.split('-');
+      State.controlCustomDate = new Date(y, m - 1, 1);
+      State.controlPeriod = 'custom';
+      document.getElementById('control-period-label').textContent = 'Mês específico';
+      renderControlPage();
+    }
+
+    function changeControlMonth(delta) {
+      State.controlCustomDate.setMonth(State.controlCustomDate.getMonth() + delta);
+      const y = State.controlCustomDate.getFullYear();
+      const m = String(State.controlCustomDate.getMonth() + 1).padStart(2, '0');
+      document.getElementById('control-date-input').value = `${y}-${m}`;
+      State.controlPeriod = 'custom';
+      document.getElementById('control-period-label').textContent = 'Mês específico';
+      renderControlPage();
+    }
+
     // FUNÇÕES DO SELETOR DE MÊS (RELATÓRIOS)
     function initReportDatePicker() {
       const input = document.getElementById('report-date-input');
@@ -3509,6 +3551,9 @@
     function setControlPeriod(value, label) {
       State.controlPeriod = value;
       document.getElementById('control-period-label').textContent = label;
+      const picker = document.getElementById('control-month-picker');
+      if (picker) picker.classList.toggle('hidden', value !== 'custom');
+      if (value === 'custom') initControlDatePicker();
       closeAllDropdowns();
       renderControlPage();
     }
@@ -3950,7 +3995,11 @@
     }
 
     function renderControlPage() {
-      const periodFiltered = sortTransactionsByDateDesc(filterByPeriod(State.transactions, State.controlPeriod));
+      const periodFiltered = sortTransactionsByDateDesc(
+        State.controlPeriod === 'custom'
+          ? filterByDateRange(State.transactions, State.controlCustomDate, 'month')
+          : filterByPeriod(State.transactions, State.controlPeriod)
+      );
       const incomes = periodFiltered.filter(t => t.type === 'income');
       const expenses = periodFiltered.filter(t => t.type === 'expense');
       
