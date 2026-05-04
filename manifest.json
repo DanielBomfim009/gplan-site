@@ -1,7 +1,7 @@
 {
   "name": "Controle Financeiro",
   "short_name": "Controle",
-  "version": "4.1",
+  "version": "4.2",
   "description": "Painel financeiro inteligente com controle de pagamentos, receitas, despesas, valores a receber e valores a pagar",
   "start_url": "./index.html",
   "display": "standalone",

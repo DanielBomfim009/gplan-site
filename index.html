@@ -875,7 +875,7 @@
             </button>
             <div class="min-w-0">
               <h1 class="font-display text-xl font-bold text-white leading-tight">Painel Financeiro</h1>
-              <p class="text-xs text-[#6b8a99] mt-1">Visao geral das suas financas</p>
+              <p class="text-xs text-[#6b8a99] mt-1">Visão geral das suas finanças</p>
             </div>
           </div>
           <div class="profile-header-avatar" id="header-avatar-dashboard"><span>DN</span></div>
@@ -927,7 +927,7 @@
 
       <div class="card mt-4">
         <div class="section-header">
-          <h2 class="section-title">Saude Financeira</h2>
+          <h2 class="section-title">Saúde Financeira</h2>
             <span class="text-xs text-[#6b8a99]" id="health-period-label">Mês atual</span>
         </div>
         <div class="p-4">
@@ -1143,7 +1143,7 @@
         <div class="flex flex-wrap gap-2">
           <button class="control-filter-btn active" data-filter="all" onclick="filterControl('all')">Todos</button>
           <button class="control-filter-btn" data-filter="pending" onclick="filterControl('pending')">Pendentes</button>
-          <button class="control-filter-btn" data-filter="paid" onclick="filterControl('paid')">Concluidos</button>
+          <button class="control-filter-btn" data-filter="paid" onclick="filterControl('paid')">Concluídos</button>
         </div>
         <div class="relative">
           <div class="dropdown text-xs" onclick="toggleDropdown('control-period')">
@@ -1231,7 +1231,7 @@
         </div>
         <div class="p-2">
           <div id="tx-list-empty" class="py-12 text-center text-[#6b8a99]">
-            <p class="text-sm">Nenhuma transacao encontrada</p>
+          <p class="text-sm">Nenhuma transação encontrada</p>
           </div>
           <div id="tx-list" class="hidden max-h-[55vh] overflow-y-auto"></div>
         </div>
@@ -1610,7 +1610,7 @@
               <input type="text" id="admin-trial-name" class="input-styled" placeholder="Nome para identificar o teste">
             </div>
             <div id="admin-trial-credentials" class="admin-password-box" style="display:block;">
-              <div class="text-xs text-[#6b8a99]">Gere um perfil teste para exibir aqui o e-mail e a senha temporaria.</div>
+              <div class="text-xs text-[#6b8a99]">Gere um perfil teste para exibir aqui o e-mail e a senha temporária.</div>
             </div>
             <div class="admin-access-actions">
               <button onclick="copyTrialCredentials()" class="admin-secondary-btn" type="button">Copiar teste</button>
@@ -1693,11 +1693,11 @@
     </div>
   </div>
 
-  <!-- Modal Transacao -->
+  <!-- Modal Transação -->
   <div id="modal-tx" class="modal-overlay" onclick="if(event.target === this) closeModalTx()">
     <div class="modal-content">
       <div class="modal-title-row">
-        <h2 class="font-display text-lg font-bold text-white" id="modal-tx-title">Nova Transacao</h2>
+        <h2 class="font-display text-lg font-bold text-white" id="modal-tx-title">Nova Transação</h2>
         <button onclick="closeModalTx()" class="w-8 h-8 rounded-lg bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-white transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -1756,7 +1756,7 @@
           </div>
           
           <div>
-            <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Metodo de Pagamento</label>
+            <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Método de Pagamento</label>
             <div class="payment-methods">
               <div class="payment-method active" data-method="credit" onclick="selectPaymentMethod('credit')">
                 <span>Credito</span>
@@ -1778,18 +1778,18 @@
             <div class="recurring-toggle-content">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               <div>
-                <div class="recurring-toggle-text">Transacao Recorrente</div>
+                <div class="recurring-toggle-text">Transação Recorrente</div>
           <div class="recurring-toggle-hint">Repete todos os meses</div>
               </div>
             </div>
             <div class="recurring-switch"></div>
           </div>
           
-          <button type="submit" class="w-full py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors mt-2">Salvar Transacao</button>
+          <button type="submit" class="w-full py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors mt-2">Salvar Transação</button>
           
           <button type="button" id="delete-tx-btn" class="delete-btn-modal hidden" onclick="showDeleteOptions()">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            Excluir Transacao
+            Excluir Transação
           </button>
         </div>
       </form>
@@ -1803,11 +1803,11 @@
         <div class="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style="background: rgba(255, 82, 82, 0.15);">
           <svg class="w-8 h-8 text-expense" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
-        <h2 class="font-display text-lg font-bold text-white mb-2">Transacao Recorrente</h2>
+        <h2 class="font-display text-lg font-bold text-white mb-2">Transação Recorrente</h2>
         <p class="text-sm text-[#6b8a99]">O que deseja fazer?</p>
       </div>
       <div class="space-y-3">
-        <button class="delete-option-btn single" onclick="deleteTransaction('single')">Excluir apenas desta transacao</button>
+        <button class="delete-option-btn single" onclick="deleteTransaction('single')">Excluir apenas desta transação</button>
         <button class="delete-option-btn all" onclick="deleteTransaction('all')">Excluir todas as recorrentes</button>
         <button class="delete-option-btn cancel" onclick="closeDeleteModal()">Cancelar</button>
       </div>
@@ -1950,12 +1950,12 @@
       calendarSelectedDate: null,
       categories: {
         expense: [
-          { id: 'credit_card', name: 'Cartao', color: '#ffb300' },
+          { id: 'credit_card', name: 'Cartão', color: '#ffb300' },
           { id: 'home', name: 'Moradia', color: '#00b4a0' },
-          { id: 'food', name: 'Alimentacao', color: '#00c853' },
+          { id: 'food', name: 'Alimentação', color: '#00c853' },
           { id: 'transport', name: 'Transporte', color: '#9c7cfa' },
-          { id: 'health', name: 'Saude', color: '#ff5252' },
-          { id: 'education', name: 'Educacao', color: '#00bcd4' },
+          { id: 'health', name: 'Saúde', color: '#ff5252' },
+          { id: 'education', name: 'Educação', color: '#00bcd4' },
           { id: 'leisure', name: 'Lazer', color: '#ff8a50' },
           { id: 'other', name: 'Outros', color: '#6b8a99' }
         ],
@@ -2066,7 +2066,7 @@
     };
     const getAccessNoteText = (access) => {
       if (!access) return '';
-      if (access.must_change_password) return 'Sua conta ainda usa uma senha temporaria. Atualize a senha nesta tela.';
+      if (access.must_change_password) return 'Sua conta ainda usa uma senha temporária. Atualize a senha nesta tela.';
       return `Acesso liberado ate ${formatAccessExpiry(access)}.`;
     };
     const makeAccessDomKey = (email) => normalizeEmail(email).replace(/[^a-z0-9]/g, '-');
@@ -3011,7 +3011,7 @@
       clearTimeout(cloudSyncTimer);
       cloudSyncTimer = setTimeout(() => {
         syncCloudNow(true);
-      }, 900);
+      }, 2500);
     }
 
     function startAutoSync() {
@@ -3442,7 +3442,7 @@
       document.getElementById('form-tx').reset();
       document.getElementById('tx-id').value = '';
       document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('modal-tx-title').textContent = 'Nova Transacao';
+      document.getElementById('modal-tx-title').textContent = 'Nova Transação';
       editingTxId = null;
       setTxType('expense');
       setTxStatus('pending');
@@ -3580,10 +3580,10 @@
       if(editingTxId) {
         const idx = State.transactions.findIndex(t => t.id === editingTxId);
         if(idx > -1) State.transactions[idx] = tx;
-        showToast('Transacao atualizada com sucesso!');
+        showToast('Transação atualizada com sucesso!');
       } else {
         State.transactions.unshift(tx);
-        showToast('Transacao salva com sucesso!');
+        showToast('Transação salva com sucesso!');
       }
       
       DB.save();
@@ -3604,7 +3604,7 @@
       document.getElementById('tx-amount').value = tx.amount.toFixed(2).replace('.', ',');
       document.getElementById('tx-desc').value = tx.description;
       document.getElementById('tx-date').value = tx.date;
-      document.getElementById('modal-tx-title').textContent = 'Editar Transacao';
+      document.getElementById('modal-tx-title').textContent = 'Editar Transação';
       
       setTxType(tx.type);
       document.getElementById('tx-category').value = tx.category;
@@ -3643,10 +3643,10 @@
       
       if(mode === 'all' && tx.recurringId) {
         State.transactions = State.transactions.filter(t => t.recurringId !== tx.recurringId);
-        showToast('Serie recorrente excluida', 'error');
+        showToast('Série recorrente excluída', 'error');
       } else {
         State.transactions = State.transactions.filter(t => t.id !== editingTxId);
-        showToast('Transacao excluida', 'error');
+        showToast('Transação excluída', 'error');
       }
       
       DB.save();
@@ -3717,7 +3717,7 @@
         State.goals = State.goals.filter(g => g.id !== id);
         DB.save();
         renderGoals();
-        showToast('Meta excluida', 'error');
+        showToast('Meta excluída', 'error');
       }
     }
 
@@ -4464,8 +4464,16 @@
         const client = await ensureActiveSupabase();
         const [{ data: accessRows, error: accessError }, { data: profileRows, error: profileError }] = await withTimeout(
           Promise.all([
-            client.from(SUPABASE_ALLOWED_EMAILS_TABLE).select('*').order('created_at', { ascending: false }),
-            client.from(SUPABASE_PROFILES_TABLE).select('*').order('created_at', { ascending: false })
+            client
+              .from(SUPABASE_ALLOWED_EMAILS_TABLE)
+              .select('email, full_name, role, status, valid_until, valid_until_at, temp_password, must_change_password, is_trial, account_created_at, claimed_at, created_by, created_at, updated_at')
+              .order('created_at', { ascending: false })
+              .limit(500),
+            client
+              .from(SUPABASE_PROFILES_TABLE)
+              .select('user_id, email, full_name, role, status, valid_until, valid_until_at, is_trial, created_at, updated_at, last_login_at')
+              .order('created_at', { ascending: false })
+              .limit(500)
           ]),
           15000,
           'Tempo limite ao atualizar o painel.'
