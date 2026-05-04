@@ -1581,6 +1581,15 @@
                 <input type="datetime-local" id="admin-access-valid-until-at" class="input-styled">
               </div>
               <div>
+                <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Plano</label>
+                <select id="admin-access-plan" class="input-styled" onchange="updateAdminPlanValidity()">
+                  <option value="monthly">Mensal</option>
+                  <option value="semiannual">Semestral</option>
+                  <option value="annual">Anual</option>
+                  <option value="trial">Teste 30 min</option>
+                </select>
+              </div>
+              <div>
                 <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Tipo de conta</label>
                 <select id="admin-access-role" class="input-styled">
               <option value="user">Usuário</option>
@@ -2068,6 +2077,34 @@
       if (!access) return '';
       if (access.must_change_password) return 'Sua conta ainda usa uma senha temporária. Atualize a senha nesta tela.';
       return `Acesso liberado ate ${formatAccessExpiry(access)}.`;
+    };
+    const PLAN_LABELS = {
+      monthly: 'Mensal',
+      semiannual: 'Semestral',
+      annual: 'Anual',
+      trial: 'Teste',
+      manual: 'Manual'
+    };
+    const getPlanLabel = (plan) => PLAN_LABELS[plan] || 'Manual';
+    const getPlanExpiryDate = (plan = 'monthly') => {
+      const date = new Date();
+      if (plan === 'trial') {
+        date.setMinutes(date.getMinutes() + DEFAULT_TRIAL_MINUTES);
+        return date;
+      }
+      if (plan === 'semiannual') {
+        date.setMonth(date.getMonth() + 6);
+        date.setHours(23, 59, 0, 0);
+        return date;
+      }
+      if (plan === 'annual') {
+        date.setFullYear(date.getFullYear() + 1);
+        date.setHours(23, 59, 0, 0);
+        return date;
+      }
+      date.setDate(date.getDate() + DEFAULT_ACCESS_DAYS);
+      date.setHours(23, 59, 0, 0);
+      return date;
     };
     const makeAccessDomKey = (email) => normalizeEmail(email).replace(/[^a-z0-9]/g, '-');
     const getAccessValidityInputId = (email) => `admin-validity-${makeAccessDomKey(email)}`;
@@ -4239,9 +4276,16 @@
     // ADMIN
     function prefillAdminAccessForm() {
       const password = generateTempPassword();
-      const validUntil = toDateTimeLocalValue(buildFutureDateTime());
+      const plan = document.getElementById('admin-access-plan')?.value || 'monthly';
+      const validUntil = toDateTimeLocalValue(getPlanExpiryDate(plan));
       if (document.getElementById('admin-access-password')) safeSetText('admin-access-password', password);
       if (document.getElementById('admin-access-valid-until-at')) document.getElementById('admin-access-valid-until-at').value = validUntil;
+    }
+
+    function updateAdminPlanValidity() {
+      const plan = document.getElementById('admin-access-plan')?.value || 'monthly';
+      const input = document.getElementById('admin-access-valid-until-at');
+      if (input) input.value = toDateTimeLocalValue(getPlanExpiryDate(plan));
     }
 
     function copyAdminPassword() {
@@ -4319,6 +4363,7 @@
       const validUntilAt = toIsoFromDateTimeLocal(validUntilInput);
       const validUntil = deriveValidUntilDate(validUntilAt);
       const role = document.getElementById('admin-access-role')?.value || 'user';
+      const planType = document.getElementById('admin-access-plan')?.value || 'monthly';
       const tempPassword = document.getElementById('admin-access-password')?.textContent?.trim();
 
       if (!email) {
@@ -4358,6 +4403,10 @@
           status: 'active',
           valid_until: validUntil,
           valid_until_at: validUntilAt,
+          plan_type: planType,
+          purchase_platform: 'manual',
+          subscription_started_at: nowIso,
+          subscription_updated_at: nowIso,
           temp_password: tempPassword,
           must_change_password: true,
           is_trial: false,
@@ -4380,6 +4429,7 @@
         document.getElementById('admin-access-email').value = '';
         document.getElementById('admin-access-name').value = '';
         document.getElementById('admin-access-role').value = 'user';
+        document.getElementById('admin-access-plan').value = 'monthly';
         prefillAdminAccessForm();
         await loadAdminData(false);
         showToast('Acesso criado. Entregue o e-mail e a senha temporária para o primeiro acesso.');
@@ -4418,6 +4468,10 @@
           status: 'active',
           valid_until: validUntil,
           valid_until_at: expiresAtIso,
+          plan_type: 'trial',
+          purchase_platform: 'manual',
+          subscription_started_at: nowIso,
+          subscription_updated_at: nowIso,
           temp_password: tempPassword,
           must_change_password: false,
           is_trial: true,
@@ -4466,12 +4520,12 @@
           Promise.all([
             client
               .from(SUPABASE_ALLOWED_EMAILS_TABLE)
-              .select('email, full_name, role, status, valid_until, valid_until_at, temp_password, must_change_password, is_trial, account_created_at, claimed_at, created_by, created_at, updated_at')
+              .select('email, full_name, role, status, valid_until, valid_until_at, temp_password, must_change_password, is_trial, plan_type, purchase_platform, purchase_reference, subscription_started_at, subscription_updated_at, account_created_at, claimed_at, created_by, created_at, updated_at')
               .order('created_at', { ascending: false })
               .limit(500),
             client
               .from(SUPABASE_PROFILES_TABLE)
-              .select('user_id, email, full_name, role, status, valid_until, valid_until_at, is_trial, created_at, updated_at, last_login_at')
+              .select('user_id, email, full_name, role, status, valid_until, valid_until_at, is_trial, plan_type, purchase_platform, purchase_reference, subscription_started_at, subscription_updated_at, created_at, updated_at, last_login_at')
               .order('created_at', { ascending: false })
               .limit(500)
           ]),
@@ -4556,11 +4610,13 @@
             </div>
             <div class="admin-badges">
               <span class="admin-badge role">${row.role === 'admin' ? 'Administrador' : 'Usuário'}</span>
+              <span class="admin-badge">${getPlanLabel(row.plan_type)}</span>
               <span class="admin-badge ${statusClass}">${row.effectiveStatus === 'active' ? 'Ativo' : row.effectiveStatus === 'blocked' ? 'Bloqueado' : 'Expirado'}</span>
               ${row.is_trial ? '<span class="admin-badge warn">Teste 30 min</span>' : ''}
             </div>
             <div class="admin-access-meta">
               <div>Validade: <strong>${validityText}</strong></div>
+              <div>Plano: <strong>${getPlanLabel(row.plan_type)}</strong>${row.purchase_platform ? ` via ${escapeHtml(row.purchase_platform)}` : ''}</div>
               <div>Último acesso: <strong>${lastAccess}</strong></div>
               <div>${tempPasswordInfo}</div>
               <div class="space-y-2">
@@ -4569,7 +4625,9 @@
               </div>
             </div>
             <div class="admin-access-actions">
-              <button class="admin-secondary-btn" onclick="renewManagedAccess('${escapeJsString(row.email)}', 30)">Renovar +30 dias</button>
+              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'monthly')">Mensal</button>
+              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'semiannual')">Semestral</button>
+              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'annual')">Anual</button>
               <button class="admin-secondary-btn" onclick="updateManagedAccessValidity('${escapeJsString(row.email)}')">Salvar validade</button>
               <button class="admin-secondary-btn warn" onclick="toggleManagedAccessStatus('${escapeJsString(row.email)}')">${row.effectiveStatus === 'blocked' ? 'Reativar' : 'Bloquear'}</button>
               <button class="admin-secondary-btn" onclick="regenerateManagedPassword('${escapeJsString(row.email)}')">Gerar senha inicial</button>
@@ -4578,6 +4636,31 @@
           </div>
         `;
       }).join('');
+    }
+
+    async function applyManagedAccessPlan(email, planType = 'monthly') {
+      if (!beginAdminAction(`Aplicando plano ${getPlanLabel(planType)}...`)) return;
+      try {
+        const client = await ensureActiveSupabase();
+        const { error } = await withTimeout(
+          client.rpc('admin_apply_access_plan', {
+            target_email: normalizeEmail(email),
+            selected_plan: planType,
+            selected_platform: 'manual',
+            selected_reference: null
+          }),
+          15000,
+          'Tempo limite ao aplicar plano.'
+        );
+        if (error) throw error;
+        await setAuthBanForManagedAccess(client, email, false);
+        await loadAdminData(true);
+        showToast(`Plano ${getPlanLabel(planType)} aplicado com sucesso.`);
+      } catch (error) {
+        showToast(`Não foi possível aplicar o plano: ${error.message}`, 'error');
+      } finally {
+        endAdminAction();
+      }
     }
 
     async function renewManagedAccess(email, days = 30) {
