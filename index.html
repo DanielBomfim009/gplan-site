@@ -2610,6 +2610,16 @@
       }));
     }
 
+    function applyManagedIdentityToState() {
+      const managedName = currentAllowedAccess?.full_name || currentAccessProfile?.full_name || '';
+      const managedEmail = currentSessionUser?.email || currentAllowedAccess?.email || currentAccessProfile?.email || State.profile.email || '';
+      State.profile = {
+        ...(State.profile || {}),
+        email: managedEmail,
+        name: managedName || State.profile?.name || managedEmail.split('@')[0] || ''
+      };
+    }
+
     // NOVO: Filtro Avançado por Data Específica
     function filterByDateRange(transactions, targetDate, mode = 'month') {
       // mode: 'month' (usa mês/ano de targetDate), 'day' (usa dia/mês/ano)
@@ -2914,6 +2924,11 @@
               temp_password: row.temp_password || null,
               must_change_password: Boolean(row.must_change_password),
               is_trial: Boolean(row.is_trial),
+              plan_type: row.plan_type || 'manual',
+              purchase_platform: row.purchase_platform || '',
+              purchase_reference: row.purchase_reference || '',
+              subscription_started_at: row.subscription_started_at || null,
+              subscription_updated_at: row.subscription_updated_at || null,
               account_created_at: row.account_created_at || null,
               claimed_at: row.claimed_at || null,
               effective_status: row.effective_status || null
@@ -3029,6 +3044,11 @@
         valid_until: accessRecord.valid_until || null,
         valid_until_at: accessRecord.valid_until_at || null,
         is_trial: Boolean(accessRecord.is_trial),
+        plan_type: accessRecord.plan_type || 'manual',
+        purchase_platform: accessRecord.purchase_platform || null,
+        purchase_reference: accessRecord.purchase_reference || null,
+        subscription_started_at: accessRecord.subscription_started_at || null,
+        subscription_updated_at: accessRecord.subscription_updated_at || null,
         created_by: accessRecord.created_by || user.id,
         updated_at: new Date().toISOString(),
         last_login_at: new Date().toISOString()
@@ -3088,18 +3108,41 @@
           const client = await ensureSupabase();
           const lastLoginAt = new Date().toISOString();
           await client.from(SUPABASE_PROFILES_TABLE).update({
+            full_name: access.full_name || profile.full_name || State.profile.name || user.email?.split('@')[0],
+            role: access.role || profile.role || 'user',
+            status: access.status || profile.status || 'active',
+            valid_until: access.valid_until || profile.valid_until || null,
+            valid_until_at: access.valid_until_at || profile.valid_until_at || null,
+            is_trial: Boolean(access.is_trial),
+            plan_type: access.plan_type || profile.plan_type || 'manual',
+            purchase_platform: access.purchase_platform || profile.purchase_platform || null,
+            purchase_reference: access.purchase_reference || profile.purchase_reference || null,
+            subscription_started_at: access.subscription_started_at || profile.subscription_started_at || null,
+            subscription_updated_at: access.subscription_updated_at || profile.subscription_updated_at || null,
             last_login_at: lastLoginAt,
             updated_at: lastLoginAt
           }).eq('user_id', user.id);
-          profile = { ...profile, last_login_at: lastLoginAt, updated_at: lastLoginAt };
+          profile = {
+            ...profile,
+            full_name: access.full_name || profile.full_name,
+            role: access.role || profile.role,
+            status: access.status || profile.status,
+            valid_until: access.valid_until || profile.valid_until,
+            valid_until_at: access.valid_until_at || profile.valid_until_at,
+            is_trial: Boolean(access.is_trial),
+            plan_type: access.plan_type || profile.plan_type || 'manual',
+            purchase_platform: access.purchase_platform || profile.purchase_platform || null,
+            purchase_reference: access.purchase_reference || profile.purchase_reference || null,
+            subscription_started_at: access.subscription_started_at || profile.subscription_started_at || null,
+            subscription_updated_at: access.subscription_updated_at || profile.subscription_updated_at || null,
+            last_login_at: lastLoginAt,
+            updated_at: lastLoginAt
+          };
         }
         currentAccessProfile = profile;
         currentAllowedAccess = access;
         passwordChangeRequired = Boolean(access.must_change_password);
-        State.profile.email = user.email;
-        if (profile?.full_name && !State.profile.name) {
-          State.profile.name = profile.full_name;
-        }
+        applyManagedIdentityToState();
         toggleAdminUi(isAdminRole(profile.role));
         setAccessNote(getAccessNoteText(access));
         renderAccessSummary(access);
@@ -3400,6 +3443,7 @@
           name: currentAccessProfile?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário'
         });
         const localUpdatedAt = DB.load(user.email);
+        applyManagedIdentityToState();
         showAuthShell(false);
         refreshAppViews();
         updateAllAvatars();
@@ -3421,6 +3465,7 @@
             isApplyingRemoteState = true;
             applyHydratedState(data.app_state);
             isApplyingRemoteState = false;
+            applyManagedIdentityToState();
             initTxDatePicker();
             initControlDatePicker();
             initReportDatePicker();
