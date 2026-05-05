@@ -4561,7 +4561,19 @@
     }
 
     function getReadableError(error) {
-      return error?.message || error?.details || error?.hint || String(error || 'erro desconhecido');
+      const rawMessage = error?.message || error?.details || error?.hint || String(error || 'erro desconhecido');
+      const message = String(rawMessage);
+      const lowerMessage = message.toLowerCase();
+      if (lowerMessage.includes('could not find the function') || lowerMessage.includes('schema cache')) {
+        return 'Função do administrador não encontrada. Rode o SQL supabase_reparo_admin_rpc_final.sql no Supabase e atualize o app.';
+      }
+      if (lowerMessage.includes('permission') || lowerMessage.includes('permissão') || lowerMessage.includes('administrador')) {
+        return 'Sua sessão não está reconhecida como administrador ativo. Rode o SQL de reparo e entre novamente no app.';
+      }
+      if (lowerMessage.includes('duplicate key')) {
+        return 'Este registro já existe. Atualize a lista e tente novamente.';
+      }
+      return message;
     }
 
     async function setAuthBanForManagedAccess(client, email, shouldBan) {
@@ -4620,7 +4632,7 @@
         if (!client) throw new Error('Conexão com a nuvem indisponível.');
         const existingRow = adminAccessRows.find(row => normalizeEmail(row.email) === email);
         if (existingRow?.profile?.last_login_at && email !== normalizeEmail(currentSessionUser?.email)) {
-          const shouldReset = confirm(`Este e-mail já foi usado antes. Para entregar uma nova senha temporária, a conta antiga de ${email} será removida do Auth e recriada no primeiro acesso. Continuar?`);
+          const shouldReset = confirm(`Este e-mail já possui um perfil criado. O acesso, plano e validade serão atualizados, mas a senha temporária só vale para primeiro acesso ou para conta ainda não registrada. Continuar?`);
           if (!shouldReset) return;
         }
 
