@@ -1374,6 +1374,30 @@
       </div>
 
       <div class="card mt-4 mb-4">
+        <div class="section-header">
+          <h2 class="section-title">Rendimento</h2>
+          <span class="text-xs text-[#6b8a99]">Sobra por mês</span>
+        </div>
+        <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="text-center p-4 bg-[#0d1f2d] rounded-xl">
+            <div class="text-xs text-[#6b8a99] mb-1">Sobra do mês</div>
+            <div class="text-xl font-bold text-brand" id="report-month-profit">R$ 0,00</div>
+          </div>
+          <div class="text-center p-4 bg-[#0d1f2d] rounded-xl">
+            <div class="text-xs text-[#6b8a99] mb-1">Rendimento total</div>
+            <div class="text-xl font-bold text-income" id="report-total-profit">R$ 0,00</div>
+          </div>
+          <div class="text-center p-4 bg-[#0d1f2d] rounded-xl">
+            <div class="text-xs text-[#6b8a99] mb-1">Média mensal</div>
+            <div class="text-xl font-bold text-warning" id="report-average-profit">R$ 0,00</div>
+          </div>
+        </div>
+        <div class="px-4 pb-4">
+          <div id="report-monthly-profit-list"></div>
+        </div>
+      </div>
+
+      <div class="card mt-4 mb-4">
         <div class="section-header"><h2 class="section-title">Despesas por Categoria</h2></div>
         <div class="p-4" id="report-expenses-breakdown">
             <!-- Barras geradas via JS -->
@@ -2255,6 +2279,36 @@
       }
 
       return insights.slice(0, 4);
+    }
+
+    function buildMonthlyProfitSummary(transactions) {
+      const monthly = {};
+      transactions
+        .filter(t => !t.isRecurringInstance)
+        .forEach(t => {
+          if (!t.date) return;
+          const date = new Date(`${t.date}T00:00:00`);
+          if (Number.isNaN(date.getTime())) return;
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (!monthly[key]) {
+            monthly[key] = {
+              key,
+              label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+              income: 0,
+              expense: 0,
+              profit: 0
+            };
+          }
+          if (t.type === 'income') monthly[key].income += Number(t.amount || 0);
+          if (t.type === 'expense') monthly[key].expense += Number(t.amount || 0);
+          monthly[key].profit = monthly[key].income - monthly[key].expense;
+        });
+
+      const months = Object.values(monthly).sort((a, b) => b.key.localeCompare(a.key));
+      const totalProfit = months.reduce((sum, item) => sum + item.profit, 0);
+      const positiveMonths = months.filter(item => item.profit > 0);
+      const averageProfit = months.length ? totalProfit / months.length : 0;
+      return { months, totalProfit, averageProfit, positiveMonths };
     }
 
     function closeAllDropdowns() {
@@ -4184,6 +4238,39 @@
       document.getElementById('report-total-expense').textContent = formatMoney(expense);
       document.getElementById('report-balance').textContent = formatMoney(income - expense);
 
+      const profitSummary = buildMonthlyProfitSummary(State.transactions);
+      const selectedKey = `${State.reportCustomDate.getFullYear()}-${String(State.reportCustomDate.getMonth() + 1).padStart(2, '0')}`;
+      const selectedMonthProfit = profitSummary.months.find(item => item.key === selectedKey)?.profit || 0;
+      document.getElementById('report-month-profit').textContent = formatMoney(selectedMonthProfit);
+      document.getElementById('report-total-profit').textContent = formatMoney(profitSummary.totalProfit);
+      document.getElementById('report-average-profit').textContent = formatMoney(profitSummary.averageProfit);
+
+      const profitList = document.getElementById('report-monthly-profit-list');
+      if (profitSummary.months.length > 0) {
+        const maxAbsProfit = Math.max(...profitSummary.months.map(item => Math.abs(item.profit)), 1);
+        profitList.innerHTML = profitSummary.months.slice(0, 12).map(item => {
+          const width = Math.max(4, Math.abs(item.profit) / maxAbsProfit * 100);
+          const color = item.profit >= 0 ? '#00b4a0' : '#ff5252';
+          return `
+            <div class="report-bar-container">
+              <div class="report-bar-header">
+                <span class="text-white font-medium">${item.label}</span>
+                <span class="${item.profit >= 0 ? 'text-brand' : 'text-expense'} text-right font-semibold">${formatMoney(item.profit)}</span>
+              </div>
+              <div class="report-bar-bg">
+                <div class="report-bar-fill" style="width: ${width}%; background-color: ${color}"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-[#6b8a99] mt-1">
+                <span>Receitas: ${formatMoney(item.income)}</span>
+                <span>Despesas: ${formatMoney(item.expense)}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        profitList.innerHTML = '<p class="text-center text-sm text-[#6b8a99]">Sem meses com movimentação para calcular rendimento.</p>';
+      }
+
       // Gráfico Despesas
       const expContainer = document.getElementById('report-expenses-breakdown');
       const expByCat = {};
@@ -4439,6 +4526,10 @@
       isAdminActionRunning = false;
     }
 
+    function getReadableError(error) {
+      return error?.message || error?.details || error?.hint || String(error || 'erro desconhecido');
+    }
+
     async function setAuthBanForManagedAccess(client, email, shouldBan) {
       const { error } = await withTimeout(
         client.rpc('admin_set_auth_ban', {
@@ -4472,7 +4563,6 @@
       const fullName = document.getElementById('admin-access-name')?.value?.trim() || '';
       const validUntilInput = document.getElementById('admin-access-valid-until-at')?.value || toDateTimeLocalValue(buildFutureDateTime());
       const validUntilAt = toIsoFromDateTimeLocal(validUntilInput);
-      const validUntil = deriveValidUntilDate(validUntilAt);
       const role = document.getElementById('admin-access-role')?.value || 'user';
       const planType = document.getElementById('admin-access-plan')?.value || 'monthly';
       const tempPassword = document.getElementById('admin-access-password')?.textContent?.trim();
@@ -4493,49 +4583,31 @@
       if (!beginAdminAction('Criando acesso...')) return;
       try {
         const client = await ensureActiveSupabase();
-        const nowIso = new Date().toISOString();
+        if (!client) throw new Error('Conexão com a nuvem indisponível.');
         const existingRow = adminAccessRows.find(row => normalizeEmail(row.email) === email);
-        if (existingRow?.profile?.last_login_at) {
+        if (existingRow?.profile?.last_login_at && email !== normalizeEmail(currentSessionUser?.email)) {
           const shouldReset = confirm(`Este e-mail já foi usado antes. Para entregar uma nova senha temporária, a conta antiga de ${email} será removida do Auth e recriada no primeiro acesso. Continuar?`);
           if (!shouldReset) return;
         }
-        if (email !== normalizeEmail(currentSessionUser?.email)) {
-          try {
-            await deleteManagedAuthAccount(client, email);
-          } catch (cleanupError) {
-            console.warn('Não foi possível limpar Auth antigo antes de recriar acesso:', cleanupError);
-            throw new Error(`Não foi possível preparar este e-mail para uma nova senha temporária. Rode o SQL de reparo atualizado e tente novamente. Detalhe: ${cleanupError.message}`);
-          }
-        }
-        const payload = {
-          email,
-          full_name: fullName,
-          role,
-          status: 'active',
-          valid_until: validUntil,
-          valid_until_at: validUntilAt,
-          plan_type: planType,
-          purchase_platform: 'manual',
-          subscription_started_at: nowIso,
-          subscription_updated_at: nowIso,
-          temp_password: tempPassword,
-          must_change_password: true,
-          is_trial: false,
-          created_by: currentSessionUser.id,
-          updated_at: nowIso
-        };
 
-        const { error } = await withTimeout(
-          client.from(SUPABASE_ALLOWED_EMAILS_TABLE).upsert(payload, { onConflict: 'email' }),
-          15000,
+        const { data, error } = await withTimeout(
+          client.rpc('admin_create_managed_access', {
+            target_email: email,
+            target_full_name: fullName,
+            target_role: role,
+            selected_plan: planType,
+            selected_valid_until_at: validUntilAt,
+            temp_password_value: tempPassword,
+            selected_platform: 'manual',
+            selected_reference: null
+          }),
+          20000,
           'Tempo limite ao criar acesso.'
         );
         if (error) throw error;
-
-        await withTimeout(client.from(SUPABASE_ALLOWED_EMAILS_TABLE).update({
-          account_created_at: existingRow?.account_created_at || null,
-          updated_at: new Date().toISOString()
-        }).eq('email', email), 15000, 'Tempo limite ao finalizar acesso.');
+        if (!data) throw new Error('O Supabase não retornou confirmação do acesso criado.');
+        safeSetText('admin-refresh-status', `Acesso criado: ${email} | Senha: ${tempPassword}`);
+        navigator.clipboard?.writeText(`E-mail: ${email}\nSenha: ${tempPassword}`).catch(() => {});
 
         document.getElementById('admin-access-email').value = '';
         document.getElementById('admin-access-name').value = '';
@@ -4543,10 +4615,13 @@
         document.getElementById('admin-access-plan').value = 'monthly';
         prefillAdminAccessForm();
         await loadAdminData(false);
-        showToast('Acesso criado. Entregue o e-mail e a senha temporária para o primeiro acesso.');
+        safeSetText('admin-refresh-status', `Acesso criado: ${email} | Senha: ${tempPassword}`);
+        showToast('Acesso criado. Dados copiados para envio ao cliente.');
       } catch (error) {
         console.error('Falha ao criar acesso:', error);
-        showToast(`Falha ao criar acesso: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Falha ao criar acesso: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4565,37 +4640,26 @@
       }
       const clientName = document.getElementById('admin-trial-name')?.value?.trim() || 'Perfil Teste';
       const tempPassword = generateTempPassword();
-      const email = await getNextTrialEmail(client);
-      const expiresAtIso = new Date(Date.now() + DEFAULT_TRIAL_MINUTES * 60 * 1000).toISOString();
-      const validUntil = deriveValidUntilDate(expiresAtIso);
-      const nowIso = new Date().toISOString();
 
       if (!beginAdminAction('Gerando perfil teste...')) return;
       try {
-        await withTimeout(client.from(SUPABASE_ALLOWED_EMAILS_TABLE).upsert({
-          email,
-          full_name: clientName,
-          role: 'user',
-          status: 'active',
-          valid_until: validUntil,
-          valid_until_at: expiresAtIso,
-          plan_type: 'trial',
-          purchase_platform: 'manual',
-          subscription_started_at: nowIso,
-          subscription_updated_at: nowIso,
-          temp_password: tempPassword,
-          must_change_password: false,
-          is_trial: true,
-          account_created_at: nowIso,
-          claimed_at: null,
-          created_by: currentSessionUser.id,
-          updated_at: nowIso
-        }, { onConflict: 'email' }), 15000, 'Tempo limite ao gerar perfil teste.');
+        const { data, error } = await withTimeout(
+          client.rpc('admin_create_trial_access', {
+            target_full_name: clientName,
+            temp_password_value: tempPassword,
+            trial_minutes: DEFAULT_TRIAL_MINUTES
+          }),
+          20000,
+          'Tempo limite ao gerar perfil teste.'
+        );
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row?.email) throw new Error('O Supabase não retornou o e-mail do perfil teste.');
 
         lastTrialCredentials = {
-          email,
-          password: tempPassword,
-          expiresAt: formatAccessExpiry({ valid_until_at: expiresAtIso })
+          email: row.email,
+          password: row.temp_password || tempPassword,
+          expiresAt: formatAccessExpiry({ valid_until_at: row.valid_until_at })
         };
         const box = document.getElementById('admin-trial-credentials');
         if (box) {
@@ -4611,7 +4675,9 @@
         showToast('Perfil teste gerado com validade de 30 minutos.');
       } catch (error) {
         console.error('Falha ao criar perfil teste:', error);
-        showToast(`Falha ao criar perfil teste: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Falha ao criar perfil teste: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4627,31 +4693,40 @@
       try {
         safeSetText('admin-refresh-status', 'Atualizando...');
         const client = await ensureActiveSupabase();
-        const [{ data: accessRows, error: accessError }, { data: profileRows, error: profileError }] = await withTimeout(
-          Promise.all([
-            client
-              .from(SUPABASE_ALLOWED_EMAILS_TABLE)
-              .select('email, full_name, role, status, valid_until, valid_until_at, temp_password, must_change_password, is_trial, plan_type, purchase_platform, purchase_reference, subscription_started_at, subscription_updated_at, account_created_at, claimed_at, created_by, created_at, updated_at')
-              .order('created_at', { ascending: false })
-              .limit(500),
-            client
-              .from(SUPABASE_PROFILES_TABLE)
-              .select('user_id, email, full_name, role, status, valid_until, valid_until_at, is_trial, plan_type, purchase_platform, purchase_reference, subscription_started_at, subscription_updated_at, created_at, updated_at, last_login_at')
-              .order('created_at', { ascending: false })
-              .limit(500)
-          ]),
+        if (!client) throw new Error('Conexão com a nuvem indisponível.');
+        const { data, error } = await withTimeout(
+          client.rpc('admin_list_accesses'),
           15000,
           'Tempo limite ao atualizar o painel.'
         );
-        if (accessError) throw accessError;
-        if (profileError) throw profileError;
+        if (error) throw error;
 
-        const profilesByEmail = new Map((profileRows || []).map(row => [normalizeEmail(row.email), row]));
-        adminAccessRows = (accessRows || []).map(row => ({
-          ...row,
-          profile: profilesByEmail.get(normalizeEmail(row.email)) || null,
-          valid_until_at: row.valid_until_at || null,
+        adminAccessRows = (data || []).map(row => ({
+          email: row.email,
+          full_name: row.full_name,
+          role: row.role,
+          status: row.status,
+          valid_until: row.valid_until,
+          valid_until_at: row.valid_until_at,
+          must_change_password: Boolean(row.must_change_password),
           is_trial: Boolean(row.is_trial),
+          plan_type: row.plan_type || 'manual',
+          purchase_platform: row.purchase_platform || '',
+          purchase_reference: row.purchase_reference || '',
+          subscription_started_at: row.subscription_started_at || null,
+          subscription_updated_at: row.subscription_updated_at || null,
+          account_created_at: row.account_created_at || null,
+          claimed_at: row.claimed_at || null,
+          created_by: row.created_by || null,
+          created_at: row.created_at || null,
+          updated_at: row.updated_at || null,
+          profile: row.profile_user_id ? {
+            user_id: row.profile_user_id,
+            email: row.email,
+            full_name: row.profile_full_name || row.full_name || '',
+            last_login_at: row.profile_last_login_at || null
+          } : null,
+          valid_until_at: row.valid_until_at || null,
           effectiveStatus: getAccessStatus(row)
         }));
         renderAdminOverview();
@@ -4660,8 +4735,9 @@
         if (!silent) showToast('Painel administrativo atualizado.');
       } catch (error) {
         console.error('Falha ao carregar painel admin:', error);
-        safeSetText('admin-refresh-status', 'Falha ao atualizar');
-        showToast('Não foi possível carregar o painel administrativo.', 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível carregar o painel administrativo: ${message}`, 'error');
       } finally {
         isAdminRefreshRunning = false;
         if (pendingAdminRefresh && currentSessionUser && isAdminRole(currentAccessProfile?.role)) {
@@ -4707,9 +4783,9 @@
         const lastAccess = row.profile?.last_login_at
           ? new Date(row.profile.last_login_at).toLocaleString('pt-BR')
           : 'Ainda não acessou';
-        const tempPasswordInfo = row.temp_password
-          ? `<div>Senha temporária atual: <strong>${escapeHtml(row.temp_password)}</strong></div>`
-          : '<div>Senha temporária não disponível.</div>';
+        const tempPasswordInfo = row.must_change_password
+          ? '<div>Senha temporária: <strong>gerada, copie no momento da criação</strong></div>'
+          : '<div>Senha temporária: não pendente.</div>';
 
         return `
           <div class="admin-access-card">
@@ -4768,7 +4844,9 @@
         await loadAdminData(true);
         showToast(`Plano ${getPlanLabel(planType)} aplicado com sucesso.`);
       } catch (error) {
-        showToast(`Não foi possível aplicar o plano: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível aplicar o plano: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4801,7 +4879,9 @@
         await loadAdminData(true);
         showToast('Validade renovada com sucesso!');
       } catch (error) {
-        showToast(`Não foi possível renovar: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível renovar: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4838,7 +4918,9 @@
         await loadAdminData(true);
         showToast('Validade atualizada com sucesso.');
       } catch (error) {
-        showToast(`Não foi possível atualizar a validade: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível atualizar a validade: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4868,7 +4950,9 @@
         await loadAdminData(true);
         showToast(nextStatus === 'blocked' ? 'Conta bloqueada.' : 'Conta reativada.');
       } catch (error) {
-        showToast(`Não foi possível atualizar o status: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível atualizar o status: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4891,9 +4975,13 @@
           updated_at: new Date().toISOString()
         }).eq('email', normalizeEmail(email));
         await loadAdminData(true);
-        showToast(`Nova senha inicial gerada para ${email}.`);
+        safeSetText('admin-refresh-status', `Nova senha de ${email}: ${newPassword}`);
+        navigator.clipboard?.writeText(newPassword).catch(() => {});
+        showToast(`Nova senha inicial gerada e copiada para ${email}.`);
       } catch (error) {
-        showToast(`Não foi possível gerar a nova senha: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível gerar a nova senha: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
@@ -4914,7 +5002,9 @@
         await loadAdminData(true);
         showToast('Acesso excluído com sucesso.');
       } catch (error) {
-        showToast(`Não foi possível excluir o acesso: ${error.message}`, 'error');
+        const message = getReadableError(error);
+        safeSetText('admin-refresh-status', `Falha: ${message}`);
+        showToast(`Não foi possível excluir o acesso: ${message}`, 'error');
       } finally {
         endAdminAction();
       }
