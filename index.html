@@ -2026,6 +2026,7 @@
     const State = (() => {
       const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE_TEMPLATE));
       fresh.dashboardCustomDate = new Date();
+      fresh.controlCustomDate = new Date();
       fresh.txCustomDate = new Date();
       fresh.reportCustomDate = new Date();
       return fresh;
@@ -2041,12 +2042,25 @@
     // HELPERS
     const formatMoney = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
     const parseMoney = (s) => { if(!s) return 0; return parseFloat(s.replace(/[^\d,]/g, '').replace(',', '.')) || 0; };
-    const formatDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    const parseLocalDate = (value) => {
+      if (!value) return null;
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+      const dateText = String(value).slice(0, 10);
+      const match = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (match) {
+        const [, year, month, day] = match;
+        return new Date(Number(year), Number(month) - 1, Number(day));
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    const getMonthKeyFromDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const formatDate = (d) => (parseLocalDate(d) || new Date()).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     const formatCurrency = (el) => { let v = el.value.replace(/\D/g, ''); v = (parseInt(v||0) / 100).toFixed(2).replace('.', ','); el.value = v; };
     const getCategory = (id) => [...State.categories.expense, ...State.categories.income].find(c => c.id === id) || { name: 'Outros', color: '#6b8a99' };
     const getAccount = (id) => State.accounts.find(account => account.id === id) || State.accounts[0] || { id: 'default', name: 'Conta', type: 'Conta', color: '#00b4a0' };
     const sortTransactionsByDateDesc = (transactions) => [...transactions].sort((a, b) => {
-      const dateDiff = new Date(b.date) - new Date(a.date);
+      const dateDiff = (parseLocalDate(b.date)?.getTime() || 0) - (parseLocalDate(a.date)?.getTime() || 0);
       if (dateDiff !== 0) return dateDiff;
       return String(b.id).localeCompare(String(a.id), 'pt-BR', { numeric: true });
     });
@@ -2287,9 +2301,9 @@
         .filter(t => !t.isRecurringInstance)
         .forEach(t => {
           if (!t.date) return;
-          const date = new Date(`${t.date}T00:00:00`);
-          if (Number.isNaN(date.getTime())) return;
-          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const date = parseLocalDate(t.date);
+          if (!date || Number.isNaN(date.getTime())) return;
+          const key = getMonthKeyFromDate(date);
           if (!monthly[key]) {
             monthly[key] = {
               key,
@@ -2576,12 +2590,14 @@
     // NOVO: Filtro Avançado por Data Específica
     function filterByDateRange(transactions, targetDate, mode = 'month') {
       // mode: 'month' (usa mês/ano de targetDate), 'day' (usa dia/mês/ano)
-      const tYear = targetDate.getFullYear();
-      const tMonth = targetDate.getMonth();
-      const tDay = targetDate.getDate();
+      const target = parseLocalDate(targetDate) || new Date();
+      const tYear = target.getFullYear();
+      const tMonth = target.getMonth();
+      const tDay = target.getDate();
 
       return transactions.filter(t => {
-        const txDate = new Date(t.date);
+        const txDate = parseLocalDate(t.date);
+        if (!txDate) return false;
         
         if (mode === 'month') {
            return txDate.getMonth() === tMonth && txDate.getFullYear() === tYear;
@@ -2594,7 +2610,7 @@
 
     // CORREÇÃO: Filtro Inteligente para Recorrentes (Mantido)
     function filterByPeriod(transactions, period, customDate = null) {
-      const now = customDate || new Date();
+      const now = parseLocalDate(customDate) || new Date();
       return transactions.filter(t => {
         // Se for recorrente e o filtro for 'month', consideramos que ela aplica ao mês atual
         if (t.recurring && period === 'month') {
@@ -2602,13 +2618,15 @@
           // Mas para simplificar e manter consistência com o pedido do usuário:
           // Vamos considerar recorrentes se a data original for <= data atual do filtro
           // A lógica original simplesmente retornava true. Vamos melhorar:
-          const txDate = new Date(t.date);
+          const txDate = parseLocalDate(t.date);
+          if (!txDate) return false;
           if (txDate.getFullYear() < now.getFullYear() || (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() <= now.getMonth())) {
              return true;
           }
         }
 
-        const txDate = new Date(t.date);
+        const txDate = parseLocalDate(t.date);
+        if (!txDate) return false;
         if(period === 'month') {
           return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
         } else if(period === 'week') {
@@ -4239,7 +4257,7 @@
       document.getElementById('report-balance').textContent = formatMoney(income - expense);
 
       const profitSummary = buildMonthlyProfitSummary(State.transactions);
-      const selectedKey = `${State.reportCustomDate.getFullYear()}-${String(State.reportCustomDate.getMonth() + 1).padStart(2, '0')}`;
+      const selectedKey = getMonthKeyFromDate(State.reportCustomDate);
       const selectedMonthProfit = profitSummary.months.find(item => item.key === selectedKey)?.profit || 0;
       document.getElementById('report-month-profit').textContent = formatMoney(selectedMonthProfit);
       document.getElementById('report-total-profit').textContent = formatMoney(profitSummary.totalProfit);
@@ -4373,7 +4391,8 @@
         const dayExpense = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
         
         const isToday = new Date().toDateString() === new Date(calDate.getFullYear(), calDate.getMonth(), d).toDateString();
-        const isSelected = State.calendarSelectedDate && new Date(State.calendarSelectedDate).toDateString() === new Date(calDate.getFullYear(), calDate.getMonth(), d).toDateString();
+        const selectedCalendarDate = parseLocalDate(State.calendarSelectedDate);
+        const isSelected = selectedCalendarDate && selectedCalendarDate.toDateString() === new Date(calDate.getFullYear(), calDate.getMonth(), d).toDateString();
         
         let dayClass = 'text-center py-2 rounded-lg cursor-pointer transition-all text-sm relative';
         if(isSelected) dayClass += ' bg-brand text-white font-bold shadow-lg shadow-brand/20';
