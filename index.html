@@ -1964,6 +1964,8 @@
     let accessLockActive = false;
     let isCloudSyncRunning = false;
     let pendingCloudSync = false;
+    let accessValidationTimer = null;
+    let lastAccessValidationAt = 0;
     let isAdminRefreshRunning = false;
     let pendingAdminRefresh = false;
     let isAdminActionRunning = false;
@@ -2483,6 +2485,7 @@
       currentAccessProfile = null;
       currentAllowedAccess = null;
       loadedSessionUserId = null;
+      lastAccessValidationAt = 0;
       isSessionLoadRunning = false;
       adminAccessRows = [];
       passwordChangeRequired = false;
@@ -2702,14 +2705,14 @@
           resetStateToDefaults({ email: email || '' });
         }
       },
-      save: () => {
+      save: ({ skipCloud = false, cloudDelay = 2500 } = {}) => {
         try {
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
         } catch (error) {
           console.warn('Não foi possível salvar localmente:', error);
           setSyncStatus('Alteração aplicada. Salvamento local indisponível.', 'warn');
         }
-        if (!isApplyingRemoteState) queueCloudSave();
+        if (!skipCloud && !isApplyingRemoteState) queueCloudSave(cloudDelay);
       }
     };
 
@@ -3202,22 +3205,25 @@
       showAuthShell(true);
     }
 
-    function queueCloudSave() {
+    function queueCloudSave(delay = 2500) {
       if (!currentSessionUser) return;
       clearTimeout(cloudSyncTimer);
       cloudSyncTimer = setTimeout(() => {
         syncCloudNow(true);
-      }, 2500);
+      }, delay);
     }
 
     function startAutoSync() {
       stopAutoSync();
       if (!currentSessionUser) return;
-      validateCurrentAccessStatus().catch(error => console.warn('Falha ao validar acesso automaticamente:', error));
+      accessValidationTimer = setTimeout(() => {
+        validateCurrentAccessStatus().catch(error => console.warn('Falha ao validar acesso automaticamente:', error));
+      }, 45000);
     }
 
     function stopAutoSync() {
       clearTimeout(cloudSyncTimer);
+      clearTimeout(accessValidationTimer);
     }
 
     function startAdminAutoRefresh() {
@@ -3232,6 +3238,7 @@
 
     function pauseBackgroundWork() {
       clearTimeout(cloudSyncTimer);
+      clearTimeout(accessValidationTimer);
       pendingCloudSync = false;
       cloudConnectionStale = true;
       supabaseClient = null;
@@ -3249,6 +3256,7 @@
       isAdminActionRunning = false;
       pendingAdminRefresh = false;
       pendingCloudSync = false;
+      lastAccessValidationAt = 0;
       setSyncStatus('Pronto para continuar.', 'ok');
     }
 
@@ -3263,6 +3271,9 @@
           if (localAccessStatus !== 'active') {
             await blockCurrentAccess(getAccessBlockReason(localAccessStatus), buildAccessBlockDetail(localAccessStatus, currentAllowedAccess));
             return false;
+          }
+          if (Date.now() - lastAccessValidationAt < 5 * 60 * 1000) {
+            return true;
           }
         }
 
@@ -3293,6 +3304,7 @@
         }
 
         currentAllowedAccess = access;
+        lastAccessValidationAt = Date.now();
         return true;
       } catch (error) {
         const localAccessStatus = currentAllowedAccess ? getAccessStatus(currentAllowedAccess) : 'active';
@@ -3364,7 +3376,9 @@
         });
         DB.load(user.email);
         showAuthShell(false);
-        setSyncStatus('Carregando dados da nuvem...', 'warn');
+        refreshAppViews();
+        updateAllAvatars();
+        setSyncStatus('Dados locais carregados. Atualizando nuvem...', 'warn');
         const { data, error } = await client
           .from(SUPABASE_STATE_TABLE)
           .select('app_state, updated_at')
@@ -3386,10 +3400,11 @@
           updateAllAvatars();
           setSyncStatus('Dados carregados da nuvem.', 'ok');
         } else {
-          await syncCloudNow(true);
-          setSyncStatus('Conta pronta. Dados iniciais enviados.', 'ok');
+          DB.save({ skipCloud: true });
+          queueCloudSave(12000);
+          setSyncStatus('Conta pronta. Sincronização inicial em segundo plano.', 'ok');
         }
-        DB.save();
+        DB.save({ skipCloud: true });
         startAutoSync();
         if (isAdminRole(currentAccessProfile?.role)) {
           startAdminAutoRefresh();
