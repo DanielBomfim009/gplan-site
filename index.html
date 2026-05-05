@@ -2170,6 +2170,26 @@
     const makeAccessDomKey = (email) => normalizeEmail(email).replace(/[^a-z0-9]/g, '-');
     const getAccessValidityInputId = (email) => `admin-validity-${makeAccessDomKey(email)}`;
     const getLocalStateKey = (email = currentSessionUser?.email || State.profile.email || 'guest') => `${LOCAL_STATE_PREFIX}:${normalizeEmail(email) || 'guest'}`;
+    const getLocalStateMetaKey = (email = currentSessionUser?.email || State.profile.email || 'guest') => `${getLocalStateKey(email)}:meta`;
+    const parseTimestamp = (value) => {
+      const time = value ? new Date(value).getTime() : 0;
+      return Number.isFinite(time) ? time : 0;
+    };
+    const getLocalStateUpdatedAt = (email = currentSessionUser?.email || State.profile.email || 'guest') => {
+      try {
+        const meta = JSON.parse(localStorage.getItem(getLocalStateMetaKey(email)) || '{}');
+        return meta.updated_at || null;
+      } catch (_) {
+        return null;
+      }
+    };
+    const setLocalStateUpdatedAt = (updatedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
+      try {
+        localStorage.setItem(getLocalStateMetaKey(email), JSON.stringify({ updated_at: updatedAt }));
+      } catch (_) {
+        return;
+      }
+    };
     const cloneDefaultState = () => ({
       ...JSON.parse(JSON.stringify(DEFAULT_STATE_TEMPLATE)),
       dashboardCustomDate: new Date(),
@@ -2674,7 +2694,7 @@
           const d = localStorage.getItem(storageKey) || (!email ? localStorage.getItem('golbuy_v6') : null);
           if(d) {
             const parsed = JSON.parse(d);
-            applyHydratedState(parsed);
+            applyHydratedState(parsed?.app_state || parsed?.state || parsed);
 
             if(!Array.isArray(State.accounts) || State.accounts.length === 0) {
               State.accounts = [
@@ -2698,16 +2718,21 @@
 
             State.selectedAccountId = State.selectedAccountId || State.accounts[0].id;
           }
+          return getLocalStateUpdatedAt(email || 'guest');
         } catch (error) {
           console.error('Falha ao carregar dados locais:', error);
           localStorage.removeItem(getLocalStateKey(email || 'guest'));
+          localStorage.removeItem(getLocalStateMetaKey(email || 'guest'));
           if (!email) localStorage.removeItem('golbuy_v6');
           resetStateToDefaults({ email: email || '' });
+          return null;
         }
       },
-      save: ({ skipCloud = false, cloudDelay = 2500 } = {}) => {
+      save: ({ skipCloud = false, cloudDelay = 800, preserveUpdatedAt = null } = {}) => {
+        const updatedAt = preserveUpdatedAt || new Date().toISOString();
         try {
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
+          setLocalStateUpdatedAt(updatedAt);
         } catch (error) {
           console.warn('Não foi possível salvar localmente:', error);
           setSyncStatus('Alteração aplicada. Salvamento local indisponível.', 'warn');
@@ -3205,7 +3230,7 @@
       showAuthShell(true);
     }
 
-    function queueCloudSave(delay = 2500) {
+    function queueCloudSave(delay = 800) {
       if (!currentSessionUser) return;
       clearTimeout(cloudSyncTimer);
       cloudSyncTimer = setTimeout(() => {
@@ -3374,7 +3399,7 @@
           email: user.email || '',
           name: currentAccessProfile?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário'
         });
-        DB.load(user.email);
+        const localUpdatedAt = DB.load(user.email);
         showAuthShell(false);
         refreshAppViews();
         updateAllAvatars();
@@ -3387,24 +3412,29 @@
         if (error) throw error;
 
         if (data?.app_state && Object.keys(data.app_state).length) {
-          isApplyingRemoteState = true;
-          applyHydratedState(data.app_state);
-          isApplyingRemoteState = false;
-          initTxDatePicker();
-          initReportDatePicker();
-          populateAccountOptions();
-          updateDashboard();
-          renderCalendar();
-          renderControlPage();
-          renderReports();
-          updateAllAvatars();
-          setSyncStatus('Dados carregados da nuvem.', 'ok');
+          const remoteUpdatedAt = data.updated_at || null;
+          const localIsNewer = parseTimestamp(localUpdatedAt) > parseTimestamp(remoteUpdatedAt) + 1000;
+          if (localIsNewer) {
+            queueCloudSave(600);
+            setSyncStatus('Dados locais mais recentes. Enviando atualização para a nuvem...', 'warn');
+          } else {
+            isApplyingRemoteState = true;
+            applyHydratedState(data.app_state);
+            isApplyingRemoteState = false;
+            initTxDatePicker();
+            initControlDatePicker();
+            initReportDatePicker();
+            populateAccountOptions();
+            refreshAppViews();
+            updateAllAvatars();
+            DB.save({ skipCloud: true, preserveUpdatedAt: remoteUpdatedAt });
+            setSyncStatus('Dados carregados da nuvem.', 'ok');
+          }
         } else {
           DB.save({ skipCloud: true });
-          queueCloudSave(12000);
-          setSyncStatus('Conta pronta. Sincronização inicial em segundo plano.', 'ok');
+          queueCloudSave(1000);
+          setSyncStatus('Conta pronta. Salvando primeira sincronização...', 'warn');
         }
-        DB.save({ skipCloud: true });
         startAutoSync();
         if (isAdminRole(currentAccessProfile?.role)) {
           startAdminAutoRefresh();
@@ -5406,6 +5436,9 @@
       });
 
       window.addEventListener('pagehide', () => {
+        if (currentSessionUser && !accessLockActive) {
+          syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao fechar:', error));
+        }
         pauseBackgroundWork();
       });
 
@@ -5421,9 +5454,15 @@
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
+          if (currentSessionUser && !accessLockActive) {
+            syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao sair da tela:', error));
+          }
           pauseBackgroundWork();
         } else {
           resumeForegroundWork();
+          if (currentSessionUser && !accessLockActive) {
+            syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao voltar para o app:', error));
+          }
         }
       });
 
