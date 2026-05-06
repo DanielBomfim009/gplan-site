@@ -525,6 +525,13 @@
     .admin-stat-label { color: #6b8a99; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
     .admin-stat-value { color: #ffffff; font-size: 24px; font-weight: 700; line-height: 1.1; margin-top: 8px; }
     .admin-stat-note { color: #86a8b7; font-size: 11px; margin-top: 6px; }
+    .admin-price-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .admin-price-card { padding: 13px; border-radius: 14px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.10); }
+    .admin-price-card.highlight { border-color: rgba(0, 180, 160, 0.32); background: rgba(0, 180, 160, 0.09); }
+    .admin-price-plan { color: #86a8b7; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .admin-price-value { color: #ffffff; font-size: 20px; font-weight: 800; margin-top: 7px; }
+    .admin-price-note { color: #86a8b7; font-size: 11px; line-height: 1.45; margin-top: 5px; }
+    .admin-plan-note { color: #86a8b7; font-size: 11px; line-height: 1.45; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.08); border: 1px solid rgba(0, 180, 160, 0.10); }
     .admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .admin-inline-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .admin-password-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
@@ -692,6 +699,7 @@
         width: 100%;
       }
       .admin-grid,
+      .admin-price-grid,
       .admin-form-grid,
       .admin-access-actions {
         grid-template-columns: 1fr;
@@ -1616,6 +1624,17 @@
 
         <div class="card">
           <div class="section-header">
+            <h2 class="section-title">Oferta de Lançamento</h2>
+            <span class="text-xs text-[#6b8a99]">Lote Fundador</span>
+          </div>
+          <div class="p-4">
+            <div id="admin-launch-pricing" class="admin-price-grid"></div>
+            <div class="admin-price-note mt-3">Sugestão: destaque o anual como melhor oferta e mantenha estes valores apenas para os primeiros clientes.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-header">
             <h2 class="section-title">Novo Acesso</h2>
             <button onclick="prefillAdminAccessForm()" class="text-xs font-semibold text-brand hover:text-brand-light transition-colors">Gerar Senha</button>
           </div>
@@ -1641,6 +1660,7 @@
                   <option value="annual">Anual</option>
                   <option value="trial">Teste 30 min</option>
                 </select>
+                <div id="admin-access-plan-note" class="admin-plan-note"></div>
               </div>
               <div>
                 <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Tipo de conta</label>
@@ -2156,7 +2176,23 @@
       trial: 'Teste',
       manual: 'Manual'
     };
+    const LAUNCH_PLAN_PRICES = {
+      monthly: { price: 9.90, equivalent: 'R$ 9,90/mês', note: 'Entrada barata para testar sem compromisso.' },
+      semiannual: { price: 49.90, equivalent: 'R$ 8,32/mês', note: 'Bom equilíbrio entre preço e retenção.' },
+      annual: { price: 89.90, equivalent: 'R$ 7,49/mês', note: 'Mais vantajoso para lançamento.' }
+    };
     const getPlanLabel = (plan) => PLAN_LABELS[plan] || 'Manual';
+    const formatPlanPrice = (plan) => {
+      const price = LAUNCH_PLAN_PRICES[plan]?.price;
+      if (typeof price !== 'number') return 'Sem preço comercial';
+      return formatMoney(price);
+    };
+    const getPlanCommercialNote = (plan) => {
+      if (plan === 'trial') return 'Perfil teste: demonstração por 30 minutos, sem cobrança.';
+      const info = LAUNCH_PLAN_PRICES[plan];
+      if (!info) return 'Plano manual ou administrativo, sem preço público de lançamento.';
+      return `Lançamento: ${formatMoney(info.price)} (${info.equivalent}). ${info.note}`;
+    };
     const getPlanExpiryDate = (plan = 'monthly') => {
       const date = new Date();
       if (plan === 'trial') {
@@ -4679,12 +4715,35 @@
       const validUntil = toDateTimeLocalValue(getPlanExpiryDate(plan));
       if (document.getElementById('admin-access-password')) safeSetText('admin-access-password', password);
       if (document.getElementById('admin-access-valid-until-at')) document.getElementById('admin-access-valid-until-at').value = validUntil;
+      updateAdminPlanNote();
     }
 
     function updateAdminPlanValidity() {
       const plan = document.getElementById('admin-access-plan')?.value || 'monthly';
       const input = document.getElementById('admin-access-valid-until-at');
       if (input) input.value = toDateTimeLocalValue(getPlanExpiryDate(plan));
+      updateAdminPlanNote();
+    }
+
+    function updateAdminPlanNote() {
+      const plan = document.getElementById('admin-access-plan')?.value || 'monthly';
+      safeSetText('admin-access-plan-note', getPlanCommercialNote(plan));
+    }
+
+    function renderLaunchPricingCards() {
+      const container = document.getElementById('admin-launch-pricing');
+      if (!container) return;
+      container.innerHTML = ['monthly', 'semiannual', 'annual'].map(plan => {
+        const info = LAUNCH_PLAN_PRICES[plan];
+        const highlight = plan === 'annual' ? ' highlight' : '';
+        return `
+          <div class="admin-price-card${highlight}">
+            <div class="admin-price-plan">${getPlanLabel(plan)}${plan === 'annual' ? ' · Mais vantajoso' : ''}</div>
+            <div class="admin-price-value">${formatMoney(info.price)}</div>
+            <div class="admin-price-note">${escapeHtml(info.equivalent)}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     function copyAdminPassword() {
@@ -5228,6 +5287,7 @@
       document.getElementById('admin-gate')?.classList.toggle('hidden', isAdmin);
       document.getElementById('admin-content')?.classList.toggle('hidden', !isAdmin);
       if (!isAdmin) return;
+      renderLaunchPricingCards();
       prefillAdminAccessForm();
       startAdminAutoRefresh();
     }
