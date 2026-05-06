@@ -1980,6 +1980,7 @@
     let isAdminActionRunning = false;
     let isSessionLoadRunning = false;
     let loadedSessionUserId = null;
+    let sessionLoadToken = 0;
     let cloudConnectionStale = false;
 
     const DEFAULT_STATE_TEMPLATE = {
@@ -2637,6 +2638,36 @@
       };
     }
 
+    function resetVisibleStateForAccount(user = null, statusText = 'Carregando conta...') {
+      const email = normalizeEmail(user?.email || '');
+      const name = user?.user_metadata?.name || email.split('@')[0] || '';
+      stopAutoSync();
+      stopAdminAutoRefresh();
+      closePasswordChangeModal();
+      adminAccessRows = [];
+      currentAccessProfile = null;
+      currentAllowedAccess = null;
+      passwordChangeRequired = false;
+      isChangingPassword = false;
+      isAccessValidationRunning = false;
+      isCloudSyncRunning = false;
+      pendingCloudSync = false;
+      pendingAdminRefresh = false;
+      isAdminRefreshRunning = false;
+      isAdminActionRunning = false;
+      lastAccessValidationAt = 0;
+      toggleAdminUi(false);
+      setAccessNote('');
+      renderAccessSummary(null);
+      renderSubscriptionSummary(null);
+      resetStateToDefaults({ email, name, photo: null });
+      refreshAppViews();
+      renderGoals();
+      populateAccountOptions();
+      updateAllAvatars();
+      setSyncStatus(statusText, email ? 'saving' : 'warn', email ? `Preparando dados de ${email}.` : 'Entre com uma conta para carregar seus dados.');
+    }
+
     // NOVO: Filtro Avançado por Data Específica
     function filterByDateRange(transactions, targetDate, mode = 'month') {
       // mode: 'month' (usa mês/ano de targetDate), 'day' (usa dia/mês/ano)
@@ -3190,6 +3221,14 @@
       safeSetText('auth-status', 'Entrando...');
 
       try {
+        const currentEmail = normalizeEmail(currentSessionUser?.email || State.profile?.email);
+        if (currentEmail && currentEmail !== email) {
+          sessionLoadToken++;
+          currentSessionUser = null;
+          loadedSessionUserId = null;
+          resetVisibleStateForAccount({ email }, 'Trocando conta...');
+        }
+
         let data;
         let error;
         if (authMode === 'login') {
@@ -3271,14 +3310,16 @@
 
     async function logoutCloud() {
       const client = await ensureActiveSupabase();
-      if (!client) return;
+      sessionLoadToken++;
       stopAutoSync();
       stopAdminAutoRefresh();
       closePasswordChangeModal();
-      try {
-        await withTimeout(client.auth.signOut(), 10000, 'Tempo limite ao encerrar sessão.');
-      } catch (error) {
-        console.warn('Falha ao encerrar sessão remota:', error);
+      if (client) {
+        try {
+          await withTimeout(client.auth.signOut(), 10000, 'Tempo limite ao encerrar sessão.');
+        } catch (error) {
+          console.warn('Falha ao encerrar sessão remota:', error);
+        }
       }
       currentSessionUser = null;
       currentAccessProfile = null;
@@ -3293,7 +3334,7 @@
       setAccessNote('');
       renderAccessSummary(null);
       renderSubscriptionSummary(null);
-      setSyncStatus('Sessão encerrada.', 'warn');
+      resetVisibleStateForAccount(null, 'Sessão encerrada.');
       showAuthShell(true);
     }
 
@@ -3457,12 +3498,29 @@
     async function loadCloudStateForUser(user) {
       const client = await ensureActiveSupabase();
       if (!client || !user) return false;
-      if (isSessionLoadRunning) return true;
+      const targetEmail = normalizeEmail(user.email);
+      const targetUserId = user.id;
+      const isSameSessionLoading = isSessionLoadRunning
+        && loadedSessionUserId === targetUserId
+        && normalizeEmail(currentSessionUser?.email) === targetEmail;
+      if (isSameSessionLoading) return true;
+
+      const loadToken = ++sessionLoadToken;
+      const isSwitchingAccount =
+        (loadedSessionUserId && loadedSessionUserId !== targetUserId) ||
+        (normalizeEmail(currentSessionUser?.email) && normalizeEmail(currentSessionUser.email) !== targetEmail) ||
+        (normalizeEmail(State.profile?.email) && normalizeEmail(State.profile.email) !== targetEmail);
+
       currentSessionUser = user;
       isSessionLoadRunning = true;
+      if (isSwitchingAccount) {
+        resetVisibleStateForAccount(user, 'Carregando nova conta...');
+      }
+
       try {
         safeSetText('auth-status', 'Validando acesso...');
         const allowed = await enforceAccessForSession(user);
+        if (loadToken !== sessionLoadToken) return false;
         if (!allowed) {
           loadedSessionUserId = null;
           return false;
@@ -3482,6 +3540,7 @@
           .select('app_state, updated_at')
           .eq('user_id', user.id)
           .maybeSingle();
+        if (loadToken !== sessionLoadToken) return false;
         if (error) throw error;
 
         if (data?.app_state && Object.keys(data.app_state).length) {
@@ -3518,9 +3577,10 @@
         if (passwordChangeRequired) {
           openPasswordChangeModal();
         }
-        loadedSessionUserId = user.id;
+        if (loadToken === sessionLoadToken) loadedSessionUserId = user.id;
         return true;
       } catch (error) {
+        if (loadToken !== sessionLoadToken) return false;
         console.error('Falha ao carregar nuvem:', error);
         const message = error?.message || 'erro desconhecido';
         setSyncStatus(`Falha ao carregar nuvem: ${message}`, 'off');
@@ -3536,7 +3596,9 @@
         if (!accessLockActive) showAuthShell(true);
         return false;
       } finally {
-        isSessionLoadRunning = false;
+        if (loadToken === sessionLoadToken) {
+          isSessionLoadRunning = false;
+        }
       }
     }
 
@@ -3565,13 +3627,13 @@
           return;
         }
         if (session?.user) {
-          currentSessionUser = session.user;
           if (session.user.id !== loadedSessionUserId) {
             safeSetText('auth-status', 'Validando acesso...');
           }
           await loadCloudStateForUser(session.user);
         } else if (event === 'SIGNED_OUT') {
           if (accessLockActive) return;
+          sessionLoadToken++;
           stopAutoSync();
           stopAdminAutoRefresh();
           closePasswordChangeModal();
@@ -3582,6 +3644,7 @@
           isSessionLoadRunning = false;
           passwordChangeRequired = false;
           toggleAdminUi(false);
+          resetVisibleStateForAccount(null, 'Sessão encerrada.');
           showAuthShell(true);
         }
       });
