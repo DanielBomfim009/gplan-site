@@ -574,10 +574,18 @@
     .access-lock-title { color: #fff; font-size: 24px; font-weight: 700; line-height: 1.12; text-align: center; }
     .access-lock-message { color: #9bb7c4; font-size: 14px; line-height: 1.65; text-align: center; margin-top: 12px; }
     .access-lock-detail { color: #ffcf5a; font-size: 12px; line-height: 1.5; text-align: center; margin-top: 14px; padding: 12px; border-radius: 14px; background: rgba(255, 179, 0, 0.08); border: 1px solid rgba(255, 179, 0, 0.12); }
-    .sync-status-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(0, 180, 160, 0.08); color: #d7eef2; font-size: 12px; font-weight: 600; }
+    .sync-status-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(0, 180, 160, 0.08); color: #d7eef2; font-size: 12px; font-weight: 600; border: 1px solid rgba(0, 180, 160, 0.10); }
+    .sync-status-chip.warn, .sync-status-chip.saving { background: rgba(255, 179, 0, 0.08); border-color: rgba(255, 179, 0, 0.14); }
+    .sync-status-chip.off { background: rgba(255, 82, 82, 0.08); border-color: rgba(255, 82, 82, 0.14); }
     .sync-status-dot { width: 8px; height: 8px; border-radius: 999px; background: #00c853; }
     .sync-status-dot.warn { background: #ffb300; }
+    .sync-status-dot.saving { background: #ffb300; animation: syncPulse 1s ease-in-out infinite; }
     .sync-status-dot.off { background: #ff5252; }
+    .sync-status-detail { color: #6b8a99; font-size: 11px; line-height: 1.45; }
+    @keyframes syncPulse {
+      0%, 100% { opacity: 0.45; transform: scale(0.82); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
     .access-summary-box { margin-top: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.10); color: #cfe9ef; font-size: 12px; line-height: 1.55; }
     .access-summary-box strong { color: #ffffff; }
 
@@ -1463,6 +1471,7 @@
             <span id="settings-sync-dot" class="sync-status-dot warn"></span>
             <span id="settings-sync-text">Sincronização não iniciada</span>
           </div>
+          <div id="settings-sync-detail" class="sync-status-detail">Aguardando primeira conexão com a nuvem.</div>
           <div class="text-xs text-[#6b8a99] leading-5">A sincronização acontece quando você faz alterações. O botão manual continua disponível.</div>
           <div id="settings-access-note" class="text-xs text-[#86a8b7] leading-5"></div>
           <div id="settings-access-summary" class="access-summary-box hidden"></div>
@@ -2376,13 +2385,21 @@
       if (el) el.textContent = repairTextEncoding(value);
     }
 
-    function setSyncStatus(text, mode = 'warn') {
+    function setSyncStatus(text, mode = 'warn', detail = '') {
       safeSetText('settings-sync-text', text);
+      safeSetText('settings-sync-detail', detail);
       const dot = document.getElementById('settings-sync-dot');
-      if (!dot) return;
-      dot.classList.remove('warn', 'off');
-      if (mode === 'warn') dot.classList.add('warn');
-      if (mode === 'off') dot.classList.add('off');
+      const chip = dot?.closest('.sync-status-chip');
+      if (dot) {
+        dot.classList.remove('warn', 'off', 'saving');
+        if (mode === 'warn') dot.classList.add('warn');
+        if (mode === 'saving') dot.classList.add('saving');
+        if (mode === 'off') dot.classList.add('off');
+      }
+      if (chip) {
+        chip.classList.remove('warn', 'off', 'saving');
+        if (['warn', 'off', 'saving'].includes(mode)) chip.classList.add(mode);
+      }
     }
 
     function setAccessNote(text = '') {
@@ -2743,9 +2760,16 @@
         try {
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
           setLocalStateUpdatedAt(updatedAt);
+          if (!skipCloud && !isApplyingRemoteState) {
+            if (currentSessionUser) {
+              setSyncStatus('Salvo no aparelho. Enviando para a nuvem...', 'saving', `Última alteração local: ${new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+            } else {
+              setSyncStatus('Salvo neste aparelho.', 'warn', 'Entre na conta para manter backup na nuvem.');
+            }
+          }
         } catch (error) {
           console.warn('Não foi possível salvar localmente:', error);
-          setSyncStatus('Alteração aplicada. Salvamento local indisponível.', 'warn');
+          setSyncStatus('Alteração aplicada. Salvamento local indisponível.', 'off', 'Verifique armazenamento do navegador ou espaço disponível.');
         }
         if (!skipCloud && !isApplyingRemoteState) queueCloudSave(cloudDelay);
       }
@@ -3388,16 +3412,20 @@
 
     async function syncCloudNow(silent = false) {
       const client = await ensureActiveSupabase();
-      if (!client || !currentSessionUser) return;
+      if (!client || !currentSessionUser) {
+        if (!silent) setSyncStatus('Nuvem indisponível.', 'off', 'Entre na conta e confira sua conexão.');
+        return;
+      }
       if (isCloudSyncRunning) {
         pendingCloudSync = true;
+        setSyncStatus('Sincronização em andamento...', 'saving', 'As novas alterações entrarão na próxima fila.');
         return;
       }
       isCloudSyncRunning = true;
       try {
         const accessOk = await validateCurrentAccessStatus();
         if (!accessOk) return;
-        if (!silent) setSyncStatus('Sincronizando dados...', 'warn');
+        setSyncStatus('Salvando na nuvem...', 'saving', 'Não feche o app até a confirmação aparecer.');
         const payload = {
           user_id: currentSessionUser.id,
           app_state: sanitizeStateForCloud(),
@@ -3409,12 +3437,13 @@
           'Tempo limite ao salvar na nuvem.'
         );
         if (error) throw error;
-        setSyncStatus('Dados salvos na nuvem.', 'ok');
+        setLocalStateUpdatedAt(payload.updated_at);
+        setSyncStatus('Salvo na nuvem.', 'ok', `Confirmado às ${new Date(payload.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`);
         if (!silent) showToast('Dados sincronizados com sucesso!');
       } catch (error) {
         console.error('Falha ao sincronizar:', error);
         const message = error?.message || 'erro desconhecido';
-        setSyncStatus(`Falha ao sincronizar: ${message}`, 'off');
+        setSyncStatus('Erro ao salvar na nuvem.', 'off', message);
         if (!silent) showToast(`Não foi possível sincronizar: ${message}`, 'error');
       } finally {
         isCloudSyncRunning = false;
