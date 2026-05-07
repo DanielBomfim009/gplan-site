@@ -536,6 +536,12 @@
     .settings-tab-btn { flex: 0 0 auto; padding: 10px 13px; border-radius: 999px; background: rgba(19, 42, 60, 0.82); color: #86a8b7; border: 1px solid rgba(0, 180, 160, 0.08); font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
     .settings-tab-btn.active { background: rgba(0, 180, 160, 0.16); color: #7fe6d7; border-color: rgba(0, 180, 160, 0.24); }
     .settings-tab-btn:active { transform: scale(0.98); }
+    .section-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .section-tabs::-webkit-scrollbar { display: none; }
+    .section-tab-btn { flex: 0 0 auto; padding: 10px 13px; border-radius: 999px; background: rgba(19, 42, 60, 0.82); color: #86a8b7; border: 1px solid rgba(0, 180, 160, 0.08); font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .section-tab-btn.active { background: rgba(0, 180, 160, 0.16); color: #7fe6d7; border-color: rgba(0, 180, 160, 0.24); }
+    .section-tab-btn:active { transform: scale(0.98); }
+    .section-tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: rgba(0, 180, 160, 0.12); color: #d8fff8; font-size: 11px; line-height: 1; }
     .data-health-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .data-health-item { padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
     .data-health-label { color: #6b8a99; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -1207,9 +1213,14 @@
           <div class="month-btn" onclick="changeControlMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
         </div>
       </div>
+
+      <div class="section-tabs mt-4" aria-label="Listas do controle">
+        <button type="button" class="section-tab-btn active" data-control-tab="income" onclick="switchControlTab('income')">Receitas<span class="section-tab-count" id="control-income-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-control-tab="expense" onclick="switchControlTab('expense')">Despesas<span class="section-tab-count" id="control-expense-tab-count">0</span></button>
+      </div>
       
       <!-- Lista de Receitas -->
-      <div class="card mt-4">
+      <div class="card mt-4" data-control-panel="income">
         <div class="section-header">
           <h2 class="section-title">Receitas</h2>
           <span class="text-xs px-2 py-1 rounded-lg bg-income/15 text-income" id="control-income-count">0</span>
@@ -1221,7 +1232,7 @@
       </div>
       
       <!-- Lista de Despesas -->
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4 hidden" data-control-panel="expense">
         <div class="section-header">
           <h2 class="section-title">Despesas</h2>
           <span class="text-xs px-2 py-1 rounded-lg bg-expense/15 text-expense" id="control-expense-count">0</span>
@@ -1377,14 +1388,14 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <div class="min-w-0">
-              <h1 class="font-display text-xl font-bold text-white leading-tight">Relatérios</h1>
+              <h1 class="font-display text-xl font-bold text-white leading-tight">Relatórios</h1>
             </div>
           </div>
           <div class="profile-header-avatar" id="header-avatar-reports"><span>DN</span></div>
         </div>
       </div>
 
-      <!-- Filtro Relatérios -->
+      <!-- Filtro de Relatórios -->
       <div class="mt-4 mb-2">
         <div class="month-selector">
           <div class="month-btn" onclick="changeReportMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
@@ -1392,8 +1403,15 @@
           <div class="month-btn" onclick="changeReportMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
         </div>
       </div>
+
+      <div class="section-tabs mt-4" aria-label="Seções de relatórios">
+        <button type="button" class="section-tab-btn active" data-report-tab="summary" onclick="switchReportTab('summary')">Resumo</button>
+        <button type="button" class="section-tab-btn" data-report-tab="profit" onclick="switchReportTab('profit')">Rendimento</button>
+        <button type="button" class="section-tab-btn" data-report-tab="categories" onclick="switchReportTab('categories')">Categorias</button>
+        <button type="button" class="section-tab-btn" data-report-tab="budget" onclick="switchReportTab('budget')">Orçamento</button>
+      </div>
       
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4" data-report-panel="summary">
         <div class="section-header"><h2 class="section-title">Resumo Geral</h2></div>
         <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="text-center p-4 bg-[#0d1f2d] rounded-xl">
@@ -1404,14 +1422,14 @@
             <div class="text-xs text-[#6b8a99] mb-1">Total Despesas</div>
             <div class="text-lg font-bold text-expense" id="report-total-expense">R$ 0,00</div>
           </div>
-          <div class="text-center p-4 bg-[#0d1f2d] rounded-xl col-span-2">
+          <div class="text-center p-4 bg-[#0d1f2d] rounded-xl sm:col-span-2">
             <div class="text-xs text-[#6b8a99] mb-1">Saldo Final</div>
             <div class="text-2xl font-bold text-brand" id="report-balance">R$ 0,00</div>
           </div>
         </div>
       </div>
 
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4 hidden" data-report-panel="profit">
         <div class="section-header">
           <h2 class="section-title">Rendimento</h2>
           <span class="text-xs text-[#6b8a99]">Sobra por mês</span>
@@ -1435,21 +1453,21 @@
         </div>
       </div>
 
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4 hidden" data-report-panel="categories">
         <div class="section-header"><h2 class="section-title">Despesas por Categoria</h2></div>
         <div class="p-4" id="report-expenses-breakdown">
             <!-- Barras geradas via JS -->
         </div>
       </div>
 
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4 hidden" data-report-panel="categories">
         <div class="section-header"><h2 class="section-title">Receitas por Fonte</h2></div>
         <div class="p-4" id="report-income-breakdown">
             <!-- Barras geradas via JS -->
         </div>
       </div>
 
-      <div class="card mt-4 mb-4">
+      <div class="card mt-4 mb-4 hidden" data-report-panel="budget">
         <div class="section-header"><h2 class="section-title">Uso do Orçamento</h2></div>
         <div class="p-4" id="report-budget-breakdown"></div>
       </div>
@@ -2058,6 +2076,8 @@
     let sessionLoadToken = 0;
     let cloudConnectionStale = false;
     let activeSettingsTab = 'profile';
+    let activeReportTab = 'summary';
+    let activeControlTab = 'income';
 
     const DEFAULT_STATE_TEMPLATE = {
       transactions: [],
@@ -2737,6 +2757,32 @@
       document.getElementById('settings-tab-admin')?.classList.toggle('hidden', !adminEnabled);
       if (scroll && !document.getElementById('page-settings')?.classList.contains('hidden')) {
         document.querySelector('#page-settings .settings-tabs')?.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function switchReportTab(tab = 'summary', { scroll = true } = {}) {
+      activeReportTab = tab;
+      document.querySelectorAll('[data-report-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.reportTab === tab);
+      });
+      document.querySelectorAll('[data-report-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.reportPanel !== tab);
+      });
+      if (scroll && !document.getElementById('page-reports')?.classList.contains('hidden')) {
+        document.querySelector('#page-reports .section-tabs')?.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function switchControlTab(tab = 'income', { scroll = true } = {}) {
+      activeControlTab = tab;
+      document.querySelectorAll('[data-control-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.controlTab === tab);
+      });
+      document.querySelectorAll('[data-control-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.controlPanel !== tab);
+      });
+      if (scroll && !document.getElementById('page-control')?.classList.contains('hidden')) {
+        document.querySelector('#page-control .section-tabs')?.scrollIntoView({ block: 'nearest' });
       }
     }
 
@@ -4254,9 +4300,9 @@
       if(page === 'calendar') renderCalendar();
       if(page === 'transactions') { renderTransactions(); initTxDatePicker(); }
       if(page === 'goals') renderGoals();
-      if(page === 'reports') { renderReports(); initReportDatePicker(); }
+      if(page === 'reports') { renderReports(); initReportDatePicker(); switchReportTab(activeReportTab, { scroll: false }); }
       if(page === 'settings') loadProfileToSettings();
-      if(page === 'control') { renderControlPage(); initControlDatePicker(); }
+      if(page === 'control') { renderControlPage(); initControlDatePicker(); switchControlTab(activeControlTab, { scroll: false }); }
       if(page === 'dashboard') updateDashboard();
       if(page === 'admin') loadAdminPage();
       
@@ -4933,6 +4979,7 @@
       const emptyEl = document.getElementById(`control-${type}-empty`);
       const listEl = document.getElementById(`control-${type}-list`);
       const countEl = document.getElementById(`control-${type}-count`);
+      const tabCountEl = document.getElementById(`control-${type}-tab-count`);
       
       let filtered = transactions;
       if(State.controlFilter === 'pending') {
@@ -4942,6 +4989,7 @@
       }
       
       countEl.textContent = filtered.length;
+      if (tabCountEl) tabCountEl.textContent = filtered.length;
       
       if(filtered.length === 0) {
         emptyEl.classList.remove('hidden');
