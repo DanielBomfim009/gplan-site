@@ -1997,6 +1997,8 @@
     const LOCAL_STATE_PREFIX = 'golbuy_v7';
     const RECOVERY_STATE_PREFIX = `${LOCAL_STATE_PREFIX}:recovery`;
     const PROTECTED_RESTORE_PREFIX = `${LOCAL_STATE_PREFIX}:protected_restore`;
+    const MAX_RECOVERY_SNAPSHOTS_PER_USER = 8;
+    const AUTO_RECOVERY_MIN_INTERVAL_MS = 3 * 60 * 1000;
     let supabaseClient = null;
     let authMode = 'login';
     let currentSessionUser = null;
@@ -2014,6 +2016,7 @@
     let pendingCloudSync = false;
     let allowEmptyCloudOverwriteOnce = false;
     let localRecoveryProtectionUntil = 0;
+    let lastAutoRecoverySnapshotAt = 0;
     let accessValidationTimer = null;
     let lastAccessValidationAt = 0;
     let isAdminRefreshRunning = false;
@@ -2729,21 +2732,63 @@
       })));
     }
 
-    function createRecoverySnapshot(reason = 'snapshot') {
+    function getRecoverySnapshotPrefix(email = currentSessionUser?.email || State.profile?.email || 'guest') {
+      return `${RECOVERY_STATE_PREFIX}:${normalizeEmail(email) || 'guest'}:`;
+    }
+
+    function pruneRecoverySnapshots(email = currentSessionUser?.email || State.profile?.email || 'guest', limit = MAX_RECOVERY_SNAPSHOTS_PER_USER) {
       try {
+        const prefix = getRecoverySnapshotPrefix(email);
+        const entries = [];
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const key = localStorage.key(i);
+          if (!key?.startsWith(prefix)) continue;
+          let createdAt = Number(key.slice(prefix.length)) || 0;
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+            createdAt = parseTimestamp(parsed.created_at) || createdAt;
+          } catch (_) {
+            // Mantém a data vinda da chave quando o conteúdo antigo não puder ser lido.
+          }
+          entries.push({ key, createdAt });
+        }
+        entries
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(limit)
+          .forEach(entry => localStorage.removeItem(entry.key));
+      } catch (error) {
+        console.warn('Falha ao limpar pontos antigos de recuperação:', error);
+      }
+    }
+
+    function createRecoverySnapshot(reason = 'snapshot', { minIntervalMs = 0 } = {}) {
+      try {
+        const now = Date.now();
+        if (minIntervalMs && now - lastAutoRecoverySnapshotAt < minIntervalMs) return false;
         const email = normalizeEmail(currentSessionUser?.email || State.profile?.email || 'guest') || 'guest';
+        const appState = sanitizeStateForCloud();
+        if (countStateTransactions(appState) <= 0) return false;
         const snapshot = {
           app: 'Controle Financeiro',
           type: 'local_recovery_snapshot',
           reason,
           email,
           created_at: new Date().toISOString(),
-          app_state: sanitizeStateForCloud()
+          app_state: appState
         };
-        localStorage.setItem(`${RECOVERY_STATE_PREFIX}:${email}:${Date.now()}`, JSON.stringify(snapshot));
+        localStorage.setItem(`${getRecoverySnapshotPrefix(email)}${now}`, JSON.stringify(snapshot));
+        lastAutoRecoverySnapshotAt = now;
+        pruneRecoverySnapshots(email);
+        return true;
       } catch (error) {
         console.warn('Falha ao criar ponto de recuperação local:', error);
+        return false;
       }
+    }
+
+    function createAutoRecoverySnapshot(reason = 'salvamento-automatico') {
+      if (isApplyingRemoteState) return false;
+      return createRecoverySnapshot(reason, { minIntervalMs: AUTO_RECOVERY_MIN_INTERVAL_MS });
     }
 
     function getProtectedRestoreKey(email = currentSessionUser?.email || State.profile?.email || 'guest') {
@@ -3112,6 +3157,9 @@
         try {
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
           setLocalStateUpdatedAt(updatedAt);
+          if (!preserveUpdatedAt) {
+            createAutoRecoverySnapshot('salvamento-local');
+          }
           if (!skipCloud && !isApplyingRemoteState) {
             if (currentSessionUser) {
               setSyncStatus('Salvo no aparelho. Enviando para a nuvem...', 'saving', `Última alteração local: ${new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
