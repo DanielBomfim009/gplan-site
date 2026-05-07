@@ -531,6 +531,11 @@
     .budget-sub { margin-top: 4px; font-size: 11px; color: #6b8a99; }
     .budget-input { width: 132px; }
     .settings-action-btn { width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0, 180, 160, 0.12); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.18); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .settings-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .settings-tabs::-webkit-scrollbar { display: none; }
+    .settings-tab-btn { flex: 0 0 auto; padding: 10px 13px; border-radius: 999px; background: rgba(19, 42, 60, 0.82); color: #86a8b7; border: 1px solid rgba(0, 180, 160, 0.08); font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .settings-tab-btn.active { background: rgba(0, 180, 160, 0.16); color: #7fe6d7; border-color: rgba(0, 180, 160, 0.24); }
+    .settings-tab-btn:active { transform: scale(0.98); }
     .data-health-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .data-health-item { padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
     .data-health-label { color: #6b8a99; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -1295,7 +1300,7 @@
           <div class="profile-header-avatar" id="header-avatar-calendar"><span>DN</span></div>
         </div>
       </div>
-      
+
       <div class="card mt-4">
         <div class="flex items-center justify-between gap-3 p-4">
           <button class="w-10 h-10 rounded-xl bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-brand transition-colors" onclick="calPrev()">
@@ -1466,7 +1471,16 @@
         </div>
       </div>
       
-      <div class="card mt-4">
+      <div class="settings-tabs mt-4" aria-label="Seções de configurações">
+        <button type="button" class="settings-tab-btn active" data-settings-tab="profile" onclick="switchSettingsTab('profile')">Perfil</button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="plan" onclick="switchSettingsTab('plan')">Plano</button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="accounts" onclick="switchSettingsTab('accounts')">Contas</button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="backup" onclick="switchSettingsTab('backup')">Backup</button>
+        <button type="button" class="settings-tab-btn" data-settings-tab="security" onclick="switchSettingsTab('security')">Segurança</button>
+        <button type="button" id="settings-tab-admin" class="settings-tab-btn hidden" data-settings-tab="admin" onclick="switchSettingsTab('admin')">Admin</button>
+      </div>
+      
+      <div class="card mt-4" data-settings-panel="profile">
         <div class="section-header"><h2 class="section-title">Perfil</h2></div>
         <div class="p-6">
           <div class="profile-photo-container">
@@ -1489,7 +1503,7 @@
         </div>
       </div>
       
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="backup">
         <div class="section-header"><h2 class="section-title">Conta na Nuvem</h2></div>
         <div class="p-4 space-y-3">
           <div class="sync-status-chip">
@@ -1507,7 +1521,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="backup">
         <div class="section-header">
           <h2 class="section-title">Segurança e Backup</h2>
           <span id="settings-data-health-status" class="text-xs text-brand font-semibold">Protegido</span>
@@ -1518,7 +1532,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="plan">
         <div class="section-header">
           <h2 class="section-title">Minha Assinatura</h2>
           <span id="subscription-status-pill" class="text-xs text-brand font-semibold">Ativo</span>
@@ -1529,7 +1543,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="security">
         <div class="section-header"><h2 class="section-title">Segurança</h2></div>
         <div class="p-4 space-y-3">
           <div class="text-xs text-[#86a8b7] leading-5">Atualize sua senha sempre que receber um acesso temporario novo.</div>
@@ -1541,7 +1555,7 @@
         </div>
       </div>
 
-      <div id="settings-admin-card" class="card mt-4 hidden">
+      <div id="settings-admin-card" class="card mt-4 hidden" data-settings-panel="admin">
         <div class="section-header">
           <h2 class="section-title">Administração do Sistema</h2>
           <span class="text-xs text-[#6b8a99]">Acesso exclusivo</span>
@@ -1552,7 +1566,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="accounts">
         <div class="section-header"><h2 class="section-title">Contas e Carteiras</h2></div>
         <div class="p-4 space-y-3">
           <div id="settings-accounts-list" class="account-summary-list"></div>
@@ -1560,7 +1574,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="accounts">
         <div class="section-header">
           <h2 class="section-title">Orçamento do Mês</h2>
           <span class="text-xs text-[#6b8a99]">Limites por categoria</span>
@@ -1570,7 +1584,7 @@
         </div>
       </div>
 
-      <div class="card mt-4">
+      <div class="card mt-4 hidden" data-settings-panel="backup">
         <div class="section-header"><h2 class="section-title">Dados</h2></div>
         <div class="p-4 space-y-2">
           <button onclick="exportData()" class="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0d1f2d] hover:bg-[#1a3649] transition-colors">
@@ -1600,7 +1614,7 @@
           </button>
         </div>
       </div>
-        <button onclick="saveProfile()" class="w-full mt-4 mb-4 py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors">Salvar alterações</button>
+        <button onclick="saveProfile()" data-settings-panel="profile" class="w-full mt-4 mb-4 py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors">Salvar alterações</button>
     </section>
 
     <section id="page-admin" class="hidden px-4 pt-4">
@@ -2043,6 +2057,7 @@
     let loadedSessionUserId = null;
     let sessionLoadToken = 0;
     let cloudConnectionStale = false;
+    let activeSettingsTab = 'profile';
 
     const DEFAULT_STATE_TEMPLATE = {
       transactions: [],
@@ -2706,9 +2721,30 @@
       switchAuthMode('login');
     }
 
+    function switchSettingsTab(tab = 'profile', { scroll = true } = {}) {
+      const isAdminTab = tab === 'admin';
+      const adminEnabled = isAdminRole(currentAccessProfile?.role);
+      const nextTab = isAdminTab && !adminEnabled ? 'profile' : tab;
+      activeSettingsTab = nextTab;
+      document.querySelectorAll('[data-settings-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.settingsTab === nextTab);
+      });
+      document.querySelectorAll('[data-settings-panel]').forEach(panel => {
+        const panelName = panel.dataset.settingsPanel;
+        const shouldShow = panelName === nextTab && (panelName !== 'admin' || adminEnabled);
+        panel.classList.toggle('hidden', !shouldShow);
+      });
+      document.getElementById('settings-tab-admin')?.classList.toggle('hidden', !adminEnabled);
+      if (scroll && !document.getElementById('page-settings')?.classList.contains('hidden')) {
+        document.querySelector('#page-settings .settings-tabs')?.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
     function toggleAdminUi(enabled) {
       document.getElementById('sidebar-admin-item')?.classList.toggle('hidden', !enabled);
-      document.getElementById('settings-admin-card')?.classList.toggle('hidden', !enabled);
+      document.getElementById('settings-tab-admin')?.classList.toggle('hidden', !enabled);
+      if (!enabled && activeSettingsTab === 'admin') activeSettingsTab = 'profile';
+      switchSettingsTab(activeSettingsTab, { scroll: false });
       if (!enabled) stopAdminAutoRefresh();
       if (!enabled && !document.getElementById('page-admin')?.classList.contains('hidden')) {
         openPage('dashboard');
@@ -5972,6 +6008,7 @@
         renderAccessSummary(null);
         renderSubscriptionSummary(null);
       }
+      switchSettingsTab(activeSettingsTab, { scroll: false });
     }
 
     function renderSettingsAccounts() {
