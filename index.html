@@ -382,8 +382,16 @@
     .period-context-label { display: block; color: #86a8b7; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
     .period-context-value { display: block; margin-top: 4px; color: #ffffff; font-size: 18px; line-height: 1.15; font-weight: 800; }
     .period-context-detail { display: block; margin-top: 4px; color: #9fc2ce; font-size: 11px; line-height: 1.35; }
+    .period-context-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
     .period-context-action { flex: 0 0 auto; padding: 10px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.14); border: 1px solid rgba(0, 180, 160, 0.22); color: #00d4b8; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .period-context-action.secondary { background: rgba(19, 42, 60, 0.78); color: #c8faf4; border-color: rgba(0, 180, 160, 0.16); }
     .period-context-action:hover { background: rgba(0, 180, 160, 0.2); }
+    .period-context-picker { margin-top: 10px; padding: 12px; border-radius: 16px; background: rgba(19, 42, 60, 0.82); border: 1px solid rgba(0, 180, 160, 0.14); }
+    @media (max-width: 420px) {
+      .period-context-card { align-items: flex-start; flex-direction: column; }
+      .period-context-actions { width: 100%; }
+      .period-context-action { flex: 1 1 0; }
+    }
     
     .fab { position: fixed; bottom: calc(88px + var(--safe-bottom)); right: max(20px, var(--safe-right)); width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #00b4a0 0%, #008577 100%); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px rgba(0, 180, 160, 0.4); cursor: pointer; z-index: 99; border: none; }
     .fab:hover { transform: scale(1.08); }
@@ -909,7 +917,17 @@
           <strong class="period-context-value" id="dashboard-context-period">Mês atual</strong>
           <span class="period-context-detail" id="dashboard-context-detail">Resultados do período selecionado</span>
         </div>
-        <button type="button" class="period-context-action" onclick="openDashboardMonthPicker()">Alterar</button>
+        <div class="period-context-actions">
+          <button type="button" class="period-context-action secondary" onclick="setDashboardCurrentMonth()">Mês atual</button>
+          <button type="button" class="period-context-action" onclick="openDashboardMonthPicker()">Selecionar mês</button>
+        </div>
+      </div>
+      <div id="dashboard-month-picker" class="period-context-picker hidden">
+        <div class="month-selector">
+          <div class="month-btn" onclick="changeDashboardMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+          <input type="month" id="dashboard-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateDashboardFromInput(this.value)">
+          <div class="month-btn" onclick="changeDashboardMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+        </div>
       </div>
       
       <!-- Cards de Resumo -->
@@ -1017,35 +1035,10 @@
         </div>
       </div>
       
-      <!-- Filtro de Período com Seletor de Mês -->
+      <!-- Ações rápidas -->
       <div class="mt-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-          <h2 class="font-display text-base font-semibold text-white">Acoes Rapidas</h2>
-          <div class="relative">
-            <div class="dropdown text-xs" onclick="toggleDropdown('period-select')">
-              <span id="period-select-label">Este mês</span>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </div>
-            <div id="dropdown-period-select" class="hidden absolute right-0 mt-2 bg-[#132a3c] border border-brand/15 rounded-xl shadow-xl z-50 min-w-[140px]">
-              <div class="py-1">
-                <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 transition-colors" onclick="setPeriod('month', 'Este mês')">Este mês</button>
-                <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 transition-colors" onclick="setPeriod('week', 'Esta semana')">Esta semana</button>
-                <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 transition-colors" onclick="setPeriod('year', 'Este ano')">Este ano</button>
-                <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 transition-colors" onclick="setPeriod('all', 'Todo período')">Todo período</button>
-                <div class="border-t border-brand/10 my-1"></div>
-                <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 transition-colors text-brand font-semibold" onclick="openDashboardMonthPicker()">Selecionar Mês Específico</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Seletor de Mês Customizado (Escondido por padrão) -->
-        <div id="dashboard-month-picker" class="hidden mb-4 p-3 bg-[#132a3c] rounded-xl border border-brand/15">
-           <div class="month-selector">
-             <div class="month-btn" onclick="changeDashboardMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
-             <input type="month" id="dashboard-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateDashboardFromInput(this.value)">
-             <div class="month-btn" onclick="changeDashboardMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
-           </div>
+          <h2 class="font-display text-base font-semibold text-white">Ações Rápidas</h2>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2886,8 +2879,6 @@
       State.controlFilter = 'all';
       currentFilter.type = 'all';
       calDate = new Date(focusDate);
-      const dashboardLabel = document.getElementById('period-select-label');
-      if (dashboardLabel) dashboardLabel.textContent = 'Personalizado';
       const controlLabel = document.getElementById('control-period-label');
       if (controlLabel) controlLabel.textContent = 'Mês específico';
       initTxDatePicker();
@@ -4089,23 +4080,31 @@
     }
 
     // FUNÇÕES DO SELETOR DE MÊS (DASHBOARD)
+    function setDashboardCurrentMonth() {
+      const now = new Date();
+      State.dashboardPeriod = 'month';
+      State.dashboardCustomDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const picker = document.getElementById('dashboard-month-picker');
+      const input = document.getElementById('dashboard-date-input');
+      if (picker) picker.classList.add('hidden');
+      if (input) input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      closeAllDropdowns();
+      updateDashboard();
+    }
+
     function openDashboardMonthPicker() {
       const picker = document.getElementById('dashboard-month-picker');
       const input = document.getElementById('dashboard-date-input');
+      if (!picker || !input) return;
       const isVisible = !picker.classList.contains('hidden');
       
       if(isVisible) {
         picker.classList.add('hidden');
-        State.dashboardPeriod = 'month'; // volta para o padrão se fechar sem usar
-        document.getElementById('period-select-label').textContent = 'Este mês';
       } else {
         picker.classList.remove('hidden');
-        // Sincroniza o input com a data atual do filtro
         const y = State.dashboardCustomDate.getFullYear();
         const m = String(State.dashboardCustomDate.getMonth() + 1).padStart(2, '0');
         input.value = `${y}-${m}`;
-        // Atualiza o label do dropdown para indicar modo customizado
-        document.getElementById('period-select-label').textContent = 'Personalizado';
         State.dashboardPeriod = 'custom';
       }
       closeAllDropdowns();
@@ -4117,15 +4116,15 @@
       const [y, m] = val.split('-');
       State.dashboardCustomDate = new Date(y, m - 1, 1);
       State.dashboardPeriod = 'custom';
-      document.getElementById('period-select-label').textContent = 'Personalizado';
       updateDashboard();
     }
 
     function changeDashboardMonth(delta) {
+      const input = document.getElementById('dashboard-date-input');
       State.dashboardCustomDate.setMonth(State.dashboardCustomDate.getMonth() + delta);
       const y = State.dashboardCustomDate.getFullYear();
       const m = String(State.dashboardCustomDate.getMonth() + 1).padStart(2, '0');
-      document.getElementById('dashboard-date-input').value = `${y}-${m}`;
+      if (input) input.value = `${y}-${m}`;
       State.dashboardPeriod = 'custom';
       updateDashboard();
     }
@@ -4216,9 +4215,8 @@
     function setPeriod(value, label) {
       // Se selecionar um padrão, esconde o picker customizado
       if(value !== 'custom') {
-         document.getElementById('dashboard-month-picker').classList.add('hidden');
+         document.getElementById('dashboard-month-picker')?.classList.add('hidden');
          State.dashboardPeriod = value;
-         document.getElementById('period-select-label').textContent = label;
       }
       closeAllDropdowns();
       updateDashboard();
