@@ -378,6 +378,12 @@
     
     .section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid rgba(0, 180, 160, 0.05); }
     .section-title { font-size: 14px; font-weight: 600; color: #e8f4f8; }
+    .period-context-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(145deg, rgba(0, 180, 160, 0.12), rgba(19, 42, 60, 0.82)); border: 1px solid rgba(0, 180, 160, 0.18); }
+    .period-context-label { display: block; color: #86a8b7; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+    .period-context-value { display: block; margin-top: 4px; color: #ffffff; font-size: 18px; line-height: 1.15; font-weight: 800; }
+    .period-context-detail { display: block; margin-top: 4px; color: #9fc2ce; font-size: 11px; line-height: 1.35; }
+    .period-context-action { flex: 0 0 auto; padding: 10px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.14); border: 1px solid rgba(0, 180, 160, 0.22); color: #00d4b8; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .period-context-action:hover { background: rgba(0, 180, 160, 0.2); }
     
     .fab { position: fixed; bottom: calc(88px + var(--safe-bottom)); right: max(20px, var(--safe-right)); width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #00b4a0 0%, #008577 100%); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px rgba(0, 180, 160, 0.4); cursor: pointer; z-index: 99; border: none; }
     .fab:hover { transform: scale(1.08); }
@@ -896,6 +902,14 @@
           </div>
           <div class="profile-header-avatar" id="header-avatar-dashboard"><span>DN</span></div>
         </div>
+      </div>
+      <div class="period-context-card mt-4">
+        <div class="min-w-0">
+          <span class="period-context-label">Período visualizado</span>
+          <strong class="period-context-value" id="dashboard-context-period">Mês atual</strong>
+          <span class="period-context-detail" id="dashboard-context-detail">Resultados do período selecionado</span>
+        </div>
+        <button type="button" class="period-context-action" onclick="openDashboardMonthPicker()">Alterar</button>
       </div>
       
       <!-- Cards de Resumo -->
@@ -4235,6 +4249,45 @@
       renderControlPage();
     }
 
+    function getDashboardPeriodContext() {
+      const now = new Date();
+      if (State.dashboardPeriod === 'custom') {
+        return {
+          title: getMonthLabel(State.dashboardCustomDate),
+          detail: 'Mês específico selecionado para o painel.'
+        };
+      }
+      if (State.dashboardPeriod === 'week') {
+        return {
+          title: 'Esta semana',
+          detail: `Referência: ${getMonthLabel(now)}.`
+        };
+      }
+      if (State.dashboardPeriod === 'year') {
+        return {
+          title: String(now.getFullYear()),
+          detail: 'Todos os lançamentos do ano atual.'
+        };
+      }
+      if (State.dashboardPeriod === 'all') {
+        return {
+          title: 'Todo período',
+          detail: 'Todos os lançamentos cadastrados.'
+        };
+      }
+      return {
+        title: getMonthLabel(now),
+        detail: 'Mês atual do calendário.'
+      };
+    }
+
+    function updateDashboardPeriodContext() {
+      const context = getDashboardPeriodContext();
+      safeSetText('dashboard-context-period', context.title);
+      safeSetText('dashboard-context-detail', context.detail);
+      safeSetText('pending-period-label', context.detail);
+    }
+
     // MODAIS
     function openModalTx() {
       document.getElementById('modal-tx').classList.add('active');
@@ -4526,6 +4579,7 @@
 
     // RENDER
     function updateDashboard() {
+      updateDashboardPeriodContext();
       let visibleTx = [];
       
       if (State.dashboardPeriod === 'custom') {
