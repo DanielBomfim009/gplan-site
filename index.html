@@ -378,7 +378,7 @@
     
     .section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid rgba(0, 180, 160, 0.05); }
     .section-title { font-size: 14px; font-weight: 600; color: #e8f4f8; }
-    .period-context-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(145deg, rgba(0, 180, 160, 0.12), rgba(19, 42, 60, 0.82)); border: 1px solid rgba(0, 180, 160, 0.18); }
+    .period-context-card { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 16px; background: linear-gradient(145deg, rgba(0, 180, 160, 0.12), rgba(19, 42, 60, 0.82)); border: 1px solid rgba(0, 180, 160, 0.18); overflow: visible; }
     .period-context-label { display: block; color: #86a8b7; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
     .period-context-value { display: block; margin-top: 4px; color: #ffffff; font-size: 18px; line-height: 1.15; font-weight: 800; }
     .period-context-detail { display: block; margin-top: 4px; color: #9fc2ce; font-size: 11px; line-height: 1.35; }
@@ -386,11 +386,14 @@
     .period-context-action { flex: 0 0 auto; padding: 10px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.14); border: 1px solid rgba(0, 180, 160, 0.22); color: #00d4b8; font-size: 12px; font-weight: 800; cursor: pointer; }
     .period-context-action.secondary { background: rgba(19, 42, 60, 0.78); color: #c8faf4; border-color: rgba(0, 180, 160, 0.16); }
     .period-context-action:hover { background: rgba(0, 180, 160, 0.2); }
-    .period-context-picker { margin-top: 10px; padding: 12px; border-radius: 16px; background: rgba(19, 42, 60, 0.82); border: 1px solid rgba(0, 180, 160, 0.14); }
+    .period-context-popover { position: absolute; top: calc(100% + 8px); right: 16px; z-index: 90; width: min(286px, calc(100vw - 32px)); padding: 12px; border-radius: 16px; background: rgba(8, 24, 36, 0.98); border: 1px solid rgba(0, 180, 160, 0.2); box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36); backdrop-filter: blur(12px); }
+    .period-popover-title { margin: 0 0 8px; color: #9fc2ce; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .period-context-popover .month-selector { background: rgba(19, 42, 60, 0.92); padding: 7px 9px; }
     @media (max-width: 420px) {
       .period-context-card { align-items: flex-start; flex-direction: column; }
       .period-context-actions { width: 100%; }
       .period-context-action { flex: 1 1 0; }
+      .period-context-popover { left: 12px; right: 12px; width: auto; }
     }
     
     .fab { position: fixed; bottom: calc(88px + var(--safe-bottom)); right: max(20px, var(--safe-right)); width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #00b4a0 0%, #008577 100%); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px rgba(0, 180, 160, 0.4); cursor: pointer; z-index: 99; border: none; }
@@ -919,14 +922,15 @@
         </div>
         <div class="period-context-actions">
           <button type="button" class="period-context-action secondary" onclick="setDashboardCurrentMonth()">Mês atual</button>
-          <button type="button" class="period-context-action" onclick="openDashboardMonthPicker()">Selecionar mês</button>
+          <button type="button" class="period-context-action" data-dashboard-month-toggle onclick="openDashboardMonthPicker()">Selecionar mês</button>
         </div>
-      </div>
-      <div id="dashboard-month-picker" class="period-context-picker hidden">
-        <div class="month-selector">
-          <div class="month-btn" onclick="changeDashboardMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
-          <input type="month" id="dashboard-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateDashboardFromInput(this.value)">
-          <div class="month-btn" onclick="changeDashboardMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+        <div id="dashboard-month-picker" class="period-context-popover hidden">
+          <p class="period-popover-title">Escolha o mês</p>
+          <div class="month-selector">
+            <div class="month-btn" onclick="changeDashboardMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+            <input type="month" id="dashboard-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateDashboardFromInput(this.value)">
+            <div class="month-btn" onclick="changeDashboardMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+          </div>
         </div>
       </div>
       
@@ -4084,12 +4088,15 @@
       const now = new Date();
       State.dashboardPeriod = 'month';
       State.dashboardCustomDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      const picker = document.getElementById('dashboard-month-picker');
       const input = document.getElementById('dashboard-date-input');
-      if (picker) picker.classList.add('hidden');
+      closeDashboardMonthPicker();
       if (input) input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       closeAllDropdowns();
       updateDashboard();
+    }
+
+    function closeDashboardMonthPicker() {
+      document.getElementById('dashboard-month-picker')?.classList.add('hidden');
     }
 
     function openDashboardMonthPicker() {
@@ -4116,6 +4123,7 @@
       const [y, m] = val.split('-');
       State.dashboardCustomDate = new Date(y, m - 1, 1);
       State.dashboardPeriod = 'custom';
+      closeDashboardMonthPicker();
       updateDashboard();
     }
 
@@ -6208,11 +6216,15 @@
         if(!e.target.closest('.dropdown') && !e.target.closest('[id^="dropdown-"]')) {
           closeAllDropdowns();
         }
+        if(!e.target.closest('#dashboard-month-picker') && !e.target.closest('[data-dashboard-month-toggle]')) {
+          closeDashboardMonthPicker();
+        }
       });
 
       document.addEventListener('keydown', (e) => {
         if(e.key === 'Escape') {
           closeAllDropdowns();
+          closeDashboardMonthPicker();
           toggleSidebar(false);
           closeModalTx();
           closeModalGoal();
