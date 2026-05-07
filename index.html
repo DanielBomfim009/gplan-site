@@ -1985,6 +1985,7 @@
     const DEFAULT_TRIAL_MINUTES = 30;
     const LOCAL_STATE_PREFIX = 'golbuy_v7';
     const RECOVERY_STATE_PREFIX = `${LOCAL_STATE_PREFIX}:recovery`;
+    const PROTECTED_RESTORE_PREFIX = `${LOCAL_STATE_PREFIX}:protected_restore`;
     let supabaseClient = null;
     let authMode = 'login';
     let currentSessionUser = null;
@@ -2731,6 +2732,60 @@
         localStorage.setItem(`${RECOVERY_STATE_PREFIX}:${email}:${Date.now()}`, JSON.stringify(snapshot));
       } catch (error) {
         console.warn('Falha ao criar ponto de recuperação local:', error);
+      }
+    }
+
+    function getProtectedRestoreKey(email = currentSessionUser?.email || State.profile?.email || 'guest') {
+      return `${PROTECTED_RESTORE_PREFIX}:${normalizeEmail(email) || 'guest'}`;
+    }
+
+    function setProtectedRestoreState(raw, reason = 'restore') {
+      try {
+        const payload = extractStatePayload(raw);
+        const count = countStateTransactions(payload);
+        if (!payload || count <= 0) return;
+        const email = normalizeEmail(currentSessionUser?.email || payload?.profile?.email || State.profile?.email || 'guest') || 'guest';
+        const expiresAt = Date.now() + (10 * 60 * 1000);
+        localRecoveryProtectionUntil = expiresAt;
+        localStorage.setItem(getProtectedRestoreKey(email), JSON.stringify({
+          app: 'Controle Financeiro',
+          type: 'protected_restore',
+          reason,
+          email,
+          count,
+          created_at: new Date().toISOString(),
+          expires_at: new Date(expiresAt).toISOString(),
+          app_state: payload
+        }));
+      } catch (error) {
+        console.warn('Falha ao proteger restauração local:', error);
+      }
+    }
+
+    function getProtectedRestoreState(email = currentSessionUser?.email || State.profile?.email || 'guest') {
+      try {
+        const raw = localStorage.getItem(getProtectedRestoreKey(email));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const expiresAt = parseTimestamp(parsed.expires_at);
+        if (!expiresAt || expiresAt < Date.now()) {
+          localStorage.removeItem(getProtectedRestoreKey(email));
+          return null;
+        }
+        const payload = extractStatePayload(parsed);
+        if (countStateTransactions(payload) <= 0) return null;
+        return { ...parsed, app_state: payload, count: countStateTransactions(payload) };
+      } catch (error) {
+        console.warn('Falha ao ler restauração protegida:', error);
+        return null;
+      }
+    }
+
+    function clearProtectedRestoreState(email = currentSessionUser?.email || State.profile?.email || 'guest') {
+      try {
+        localStorage.removeItem(getProtectedRestoreKey(email));
+      } catch (_) {
+        return;
       }
     }
 
@@ -3611,17 +3666,17 @@
       const client = await ensureActiveSupabase();
       if (!client || !currentSessionUser) {
         if (!silent) setSyncStatus('Nuvem indisponível.', 'off', 'Entre na conta e confira sua conexão.');
-        return;
+        return false;
       }
       if (isCloudSyncRunning) {
         pendingCloudSync = true;
         setSyncStatus('Sincronização em andamento...', 'saving', 'As novas alterações entrarão na próxima fila.');
-        return;
+        return false;
       }
       isCloudSyncRunning = true;
       try {
         const accessOk = await validateCurrentAccessStatus();
-        if (!accessOk) return;
+        if (!accessOk) return false;
         setSyncStatus('Salvando na nuvem...', 'saving', 'Não feche o app até a confirmação aparecer.');
         const appState = sanitizeStateForCloud();
         const nextTransactionCount = countStateTransactions(appState);
@@ -3643,7 +3698,7 @@
               `A nuvem tem ${existingTransactionCount} transações e a tela atual está vazia. A sincronização vazia foi bloqueada.`
             );
             if (!silent) showToast('Sincronização vazia bloqueada para proteger suas transações.', 'error');
-            return;
+            return false;
           }
         }
         const payload = {
@@ -3658,13 +3713,19 @@
         );
         if (error) throw error;
         setLocalStateUpdatedAt(payload.updated_at);
+        const protectedRestore = getProtectedRestoreState(currentSessionUser.email);
+        if (!protectedRestore || countStateTransactions(payload.app_state) >= protectedRestore.count) {
+          clearProtectedRestoreState(currentSessionUser.email);
+        }
         setSyncStatus('Salvo na nuvem.', 'ok', `Confirmado às ${new Date(payload.updated_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`);
         if (!silent) showToast('Dados sincronizados com sucesso!');
+        return true;
       } catch (error) {
         console.error('Falha ao sincronizar:', error);
         const message = error?.message || 'erro desconhecido';
         setSyncStatus('Erro ao salvar na nuvem.', 'off', message);
         if (!silent) showToast(`Não foi possível sincronizar: ${message}`, 'error');
+        return false;
       } finally {
         allowEmptyCloudOverwriteOnce = false;
         isCloudSyncRunning = false;
@@ -3727,20 +3788,46 @@
         if (data?.app_state && Object.keys(data.app_state).length) {
           const remoteUpdatedAt = data.updated_at || null;
           const remoteTransactionCount = countStateTransactions(data.app_state);
+          const protectedRestore = getProtectedRestoreState(targetEmail);
+          const protectedRestoreCount = protectedRestore?.count || 0;
+          const currentLocalTransactionCount = countStateTransactions(State);
           const recoveryProtectionActive = Date.now() < localRecoveryProtectionUntil;
           const shouldProtectLocalTransactions =
-            localTransactionCount > 0 &&
+            currentLocalTransactionCount > 0 &&
             (
               remoteTransactionCount === 0 ||
-              (recoveryProtectionActive && remoteTransactionCount < localTransactionCount)
+              (recoveryProtectionActive && remoteTransactionCount < currentLocalTransactionCount)
             );
+          const shouldUseProtectedRestore =
+            protectedRestoreCount > 0 &&
+            remoteTransactionCount < protectedRestoreCount;
           const localIsNewer = parseTimestamp(localUpdatedAt) > parseTimestamp(remoteUpdatedAt) + 1000;
-          if (shouldProtectLocalTransactions) {
+          if (shouldUseProtectedRestore) {
+            if (currentLocalTransactionCount < protectedRestoreCount) {
+              createRecoverySnapshot('antes-de-reaplicar-restauracao-protegida');
+              applyHydratedState(protectedRestore.app_state);
+              applyManagedIdentityToState();
+              initTxDatePicker();
+              initControlDatePicker();
+              initReportDatePicker();
+              populateAccountOptions();
+              refreshAppViews();
+              updateAllAvatars();
+              DB.save({ skipCloud: true });
+            }
+            localRecoveryProtectionUntil = Math.max(localRecoveryProtectionUntil, parseTimestamp(protectedRestore.expires_at));
+            queueCloudSave(300);
+            setSyncStatus(
+              'Restauração protegida ativa.',
+              'warn',
+              `Mantive ${protectedRestoreCount} transações do backup e bloqueei a nuvem com ${remoteTransactionCount}. Reenviando para a nuvem...`
+            );
+          } else if (shouldProtectLocalTransactions) {
             queueCloudSave(300);
             setSyncStatus(
               'Recuperação local protegida.',
               'warn',
-              `Mantive ${localTransactionCount} transações locais e bloqueei a nuvem com ${remoteTransactionCount}. Salvando recuperação na nuvem...`
+              `Mantive ${currentLocalTransactionCount} transações locais e bloqueei a nuvem com ${remoteTransactionCount}. Salvando recuperação na nuvem...`
             );
           } else if (localIsNewer) {
             queueCloudSave(600);
@@ -5746,8 +5833,12 @@
           if (txCount === 0 && currentCount > 0 && !confirm('Este backup não possui transações. Deseja importar mesmo assim?')) {
             return;
           }
+          clearTimeout(cloudSyncTimer);
+          pendingCloudSync = false;
+          sessionLoadToken += 1;
+          isSessionLoadRunning = false;
           if (txCount === 0) allowEmptyCloudOverwriteOnce = true;
-          if (txCount > 0) localRecoveryProtectionUntil = Date.now() + (2 * 60 * 1000);
+          if (txCount > 0) localRecoveryProtectionUntil = Date.now() + (10 * 60 * 1000);
           createRecoverySnapshot('antes-da-importacao');
           resetStateToDefaults({
             email: currentSessionUser?.email || '',
@@ -5756,13 +5847,16 @@
           });
           applyHydratedState(payload);
           applyManagedIdentityToState();
+          setProtectedRestoreState(sanitizeStateForCloud(), 'importacao-de-backup');
           refreshAppViews();
           renderGoals();
           populateAccountOptions();
           updateAllAvatars();
           DB.save();
-          await syncCloudNow(true);
-          showToast(`Backup importado com ${txCount} transações.`);
+          const savedToCloud = await syncCloudNow(true);
+          showToast(savedToCloud
+            ? `Backup importado com ${txCount} transações e salvo na nuvem.`
+            : `Backup importado com ${txCount} transações no aparelho. A proteção vai tentar reenviar para a nuvem.`);
         } catch (error) {
           console.error('Falha ao importar backup:', error);
           showToast(error?.message || 'Não foi possível importar este arquivo.', 'error');
@@ -5798,7 +5892,11 @@
 
         if (!confirm(message)) return;
 
-        localRecoveryProtectionUntil = Date.now() + (2 * 60 * 1000);
+        clearTimeout(cloudSyncTimer);
+        pendingCloudSync = false;
+        sessionLoadToken += 1;
+        isSessionLoadRunning = false;
+        localRecoveryProtectionUntil = Date.now() + (10 * 60 * 1000);
         createRecoverySnapshot('antes-da-recuperacao-local');
         resetStateToDefaults({
           email: currentSessionUser?.email || '',
@@ -5807,13 +5905,16 @@
         });
         applyHydratedState(best.payload);
         applyManagedIdentityToState();
+        setProtectedRestoreState(sanitizeStateForCloud(), 'recuperacao-local');
         refreshAppViews();
         renderGoals();
         populateAccountOptions();
         updateAllAvatars();
         DB.save();
-        await syncCloudNow(true);
-        showToast(`Recuperação concluída: ${best.count} transações restauradas.`);
+        const savedToCloud = await syncCloudNow(true);
+        showToast(savedToCloud
+          ? `Recuperação concluída: ${best.count} transações salvas na nuvem.`
+          : `Recuperação local concluída: ${best.count} transações no aparelho. A proteção vai tentar reenviar para a nuvem.`);
       } catch (error) {
         console.error('Falha na recuperação local:', error);
         showToast(error?.message || 'Não foi possível recuperar os dados locais.', 'error');
