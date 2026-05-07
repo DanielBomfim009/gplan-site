@@ -2001,6 +2001,7 @@
     let isCloudSyncRunning = false;
     let pendingCloudSync = false;
     let allowEmptyCloudOverwriteOnce = false;
+    let localRecoveryProtectionUntil = 0;
     let accessValidationTimer = null;
     let lastAccessValidationAt = 0;
     let isAdminRefreshRunning = false;
@@ -3710,6 +3711,7 @@
         });
         const localUpdatedAt = DB.load(user.email);
         applyManagedIdentityToState();
+        const localTransactionCount = countStateTransactions(State);
         showAuthShell(false);
         refreshAppViews();
         updateAllAvatars();
@@ -3724,14 +3726,33 @@
 
         if (data?.app_state && Object.keys(data.app_state).length) {
           const remoteUpdatedAt = data.updated_at || null;
+          const remoteTransactionCount = countStateTransactions(data.app_state);
+          const recoveryProtectionActive = Date.now() < localRecoveryProtectionUntil;
+          const shouldProtectLocalTransactions =
+            localTransactionCount > 0 &&
+            (
+              remoteTransactionCount === 0 ||
+              (recoveryProtectionActive && remoteTransactionCount < localTransactionCount)
+            );
           const localIsNewer = parseTimestamp(localUpdatedAt) > parseTimestamp(remoteUpdatedAt) + 1000;
-          if (localIsNewer) {
+          if (shouldProtectLocalTransactions) {
+            queueCloudSave(300);
+            setSyncStatus(
+              'Recuperação local protegida.',
+              'warn',
+              `Mantive ${localTransactionCount} transações locais e bloqueei a nuvem com ${remoteTransactionCount}. Salvando recuperação na nuvem...`
+            );
+          } else if (localIsNewer) {
             queueCloudSave(600);
             setSyncStatus('Dados locais mais recentes. Enviando atualização para a nuvem...', 'warn');
           } else {
+            createRecoverySnapshot('antes-de-aplicar-estado-da-nuvem');
             isApplyingRemoteState = true;
-            applyHydratedState(data.app_state);
-            isApplyingRemoteState = false;
+            try {
+              applyHydratedState(data.app_state);
+            } finally {
+              isApplyingRemoteState = false;
+            }
             applyManagedIdentityToState();
             initTxDatePicker();
             initControlDatePicker();
@@ -5726,6 +5747,7 @@
             return;
           }
           if (txCount === 0) allowEmptyCloudOverwriteOnce = true;
+          if (txCount > 0) localRecoveryProtectionUntil = Date.now() + (2 * 60 * 1000);
           createRecoverySnapshot('antes-da-importacao');
           resetStateToDefaults({
             email: currentSessionUser?.email || '',
@@ -5776,6 +5798,7 @@
 
         if (!confirm(message)) return;
 
+        localRecoveryProtectionUntil = Date.now() + (2 * 60 * 1000);
         createRecoverySnapshot('antes-da-recuperacao-local');
         resetStateToDefaults({
           email: currentSessionUser?.email || '',
