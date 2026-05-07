@@ -2839,6 +2839,64 @@
         });
     }
 
+    function getBestTransactionFocusDate(raw = State) {
+      const payload = extractStatePayload(raw) || {};
+      const transactions = Array.isArray(payload.transactions)
+        ? payload.transactions.filter(t => !t?.isRecurringInstance && parseLocalDate(t?.date))
+        : [];
+      if (!transactions.length) return new Date();
+
+      const now = new Date();
+      const currentMonthTx = transactions.find(t => {
+        const date = parseLocalDate(t.date);
+        return date && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+      });
+      if (currentMonthTx) {
+        const date = parseLocalDate(currentMonthTx.date);
+        return new Date(date.getFullYear(), date.getMonth(), 1);
+      }
+
+      const latest = sortTransactionsByDateDesc(transactions)[0];
+      const latestDate = parseLocalDate(latest.date);
+      return latestDate ? new Date(latestDate.getFullYear(), latestDate.getMonth(), 1) : new Date();
+    }
+
+    function focusViewsOnTransactionMonth(raw = State) {
+      const focusDate = getBestTransactionFocusDate(raw);
+      State.dashboardPeriod = 'custom';
+      State.dashboardCustomDate = new Date(focusDate);
+      State.txCustomDate = new Date(focusDate);
+      State.reportCustomDate = new Date(focusDate);
+      State.controlPeriod = 'custom';
+      State.controlCustomDate = new Date(focusDate);
+      State.controlFilter = 'all';
+      currentFilter.type = 'all';
+      calDate = new Date(focusDate);
+      const dashboardLabel = document.getElementById('period-select-label');
+      if (dashboardLabel) dashboardLabel.textContent = 'Personalizado';
+      const controlLabel = document.getElementById('control-period-label');
+      if (controlLabel) controlLabel.textContent = 'Mês específico';
+      initTxDatePicker();
+      initControlDatePicker();
+      initReportDatePicker();
+      return focusDate;
+    }
+
+    function getImportedMonthsSummary(raw = State) {
+      const payload = extractStatePayload(raw) || {};
+      const counts = {};
+      (payload.transactions || []).forEach(t => {
+        const date = parseLocalDate(t?.date);
+        if (!date || t?.isRecurringInstance) return;
+        const key = getMonthKeyFromDate(date);
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      return Object.entries(counts)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, count]) => `${key}: ${count}`)
+        .join(' | ');
+    }
+
     function applyManagedIdentityToState() {
       const managedName = currentAllowedAccess?.full_name || currentAccessProfile?.full_name || '';
       const managedEmail = currentSessionUser?.email || currentAllowedAccess?.email || currentAccessProfile?.email || State.profile.email || '';
@@ -5847,6 +5905,7 @@
           });
           applyHydratedState(payload);
           applyManagedIdentityToState();
+          const focusDate = focusViewsOnTransactionMonth(State);
           setProtectedRestoreState(sanitizeStateForCloud(), 'importacao-de-backup');
           refreshAppViews();
           renderGoals();
@@ -5854,9 +5913,12 @@
           updateAllAvatars();
           DB.save();
           const savedToCloud = await syncCloudNow(true);
+          const monthLabel = getMonthLabel(focusDate);
+          const monthSummary = getImportedMonthsSummary(State);
           showToast(savedToCloud
-            ? `Backup importado com ${txCount} transações e salvo na nuvem.`
-            : `Backup importado com ${txCount} transações no aparelho. A proteção vai tentar reenviar para a nuvem.`);
+            ? `Backup importado com ${txCount} transações. Mostrando ${monthLabel}.`
+            : `Backup importado com ${txCount} transações no aparelho. Mostrando ${monthLabel}.`);
+          console.info('Resumo de meses importados:', monthSummary);
         } catch (error) {
           console.error('Falha ao importar backup:', error);
           showToast(error?.message || 'Não foi possível importar este arquivo.', 'error');
@@ -5905,6 +5967,7 @@
         });
         applyHydratedState(best.payload);
         applyManagedIdentityToState();
+        const focusDate = focusViewsOnTransactionMonth(State);
         setProtectedRestoreState(sanitizeStateForCloud(), 'recuperacao-local');
         refreshAppViews();
         renderGoals();
@@ -5912,9 +5975,10 @@
         updateAllAvatars();
         DB.save();
         const savedToCloud = await syncCloudNow(true);
+        const monthLabel = getMonthLabel(focusDate);
         showToast(savedToCloud
-          ? `Recuperação concluída: ${best.count} transações salvas na nuvem.`
-          : `Recuperação local concluída: ${best.count} transações no aparelho. A proteção vai tentar reenviar para a nuvem.`);
+          ? `Recuperação concluída: ${best.count} transações. Mostrando ${monthLabel}.`
+          : `Recuperação local concluída: ${best.count} transações. Mostrando ${monthLabel}.`);
       } catch (error) {
         console.error('Falha na recuperação local:', error);
         showToast(error?.message || 'Não foi possível recuperar os dados locais.', 'error');
