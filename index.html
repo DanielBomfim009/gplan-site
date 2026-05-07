@@ -1867,7 +1867,7 @@
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
               <div>
                 <div class="recurring-toggle-text">Transação Recorrente</div>
-          <div class="recurring-toggle-hint">Repete todos os meses</div>
+          <div class="recurring-toggle-hint">Repete todo mês até dezembro do mesmo ano</div>
               </div>
             </div>
             <div class="recurring-switch"></div>
@@ -2708,14 +2708,14 @@
       State.controlCustomDate = State.controlCustomDate ? new Date(State.controlCustomDate) : new Date();
       State.txCustomDate = State.txCustomDate ? new Date(State.txCustomDate) : new Date();
       State.reportCustomDate = State.reportCustomDate ? new Date(State.reportCustomDate) : new Date();
-      State.transactions = (State.transactions || []).map(t => ({
+      State.transactions = normalizeRecurringSeries((State.transactions || []).map(t => ({
         ...t,
         accountId: t.accountId || State.accounts?.[0]?.id || 'checking',
         status: t.status || 'paid',
         recurring: t.recurring || false,
         recurringId: t.recurringId || null,
         isRecurringInstance: t.isRecurringInstance || false
-      }));
+      })));
     }
 
     function createRecoverySnapshot(reason = 'snapshot') {
@@ -2897,6 +2897,62 @@
         .join(' | ');
     }
 
+    function buildRecurringSeries(baseTx) {
+      const startDate = parseLocalDate(baseTx?.date) || new Date();
+      const year = startDate.getFullYear();
+      const startMonth = startDate.getMonth();
+      const startDay = startDate.getDate();
+      const recurringId = baseTx.recurringId || `${baseTx.id || Date.now()}_r`;
+      const series = [];
+
+      for (let month = startMonth; month <= 11; month += 1) {
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+        const date = new Date(year, month, Math.min(startDay, lastDayOfMonth));
+        const suffix = `${year}_${String(month + 1).padStart(2, '0')}`;
+        series.push({
+          ...baseTx,
+          id: month === startMonth ? String(baseTx.id || `${recurringId}_${suffix}`) : `${recurringId}_${suffix}`,
+          date: toDateInputValue(date),
+          recurring: true,
+          recurringId,
+          isRecurringInstance: false
+        });
+      }
+
+      return series;
+    }
+
+    function normalizeRecurringSeries(transactions = []) {
+      const normalized = transactions.map(t => ({
+        ...t,
+        recurring: t.recurring || false,
+        recurringId: t.recurring ? (t.recurringId || `${t.id}_r`) : null,
+        isRecurringInstance: false
+      }));
+      const byRecurringId = normalized.reduce((groups, tx) => {
+        if (tx.recurring && tx.recurringId) {
+          groups[tx.recurringId] = groups[tx.recurringId] || [];
+          groups[tx.recurringId].push(tx);
+        }
+        return groups;
+      }, {});
+      const existingIds = new Set(normalized.map(tx => String(tx.id)));
+
+      Object.values(byRecurringId).forEach(group => {
+        if (group.length !== 1) return;
+        const onlyTx = group[0];
+        const date = parseLocalDate(onlyTx.date);
+        if (!date || date.getMonth() === 11) return;
+        buildRecurringSeries(onlyTx).slice(1).forEach(tx => {
+          if (existingIds.has(String(tx.id))) return;
+          existingIds.add(String(tx.id));
+          normalized.push(tx);
+        });
+      });
+
+      return sortTransactionsByDateDesc(normalized);
+    }
+
     function applyManagedIdentityToState() {
       const managedName = currentAllowedAccess?.full_name || currentAccessProfile?.full_name || '';
       const managedEmail = currentSessionUser?.email || currentAllowedAccess?.email || currentAccessProfile?.email || State.profile.email || '';
@@ -2958,23 +3014,10 @@
       });
     }
 
-    // CORREÇÃO: Filtro Inteligente para Recorrentes (Mantido)
+    // Filtro por período. Recorrências já são materializadas mês a mês.
     function filterByPeriod(transactions, period, customDate = null) {
       const now = parseLocalDate(customDate) || new Date();
       return transactions.filter(t => {
-        // Se for recorrente e o filtro for 'month', consideramos que ela aplica ao mês atual
-        if (t.recurring && period === 'month') {
-          // Lógica refinada: Se a data da transação for menor que o mês atual, ela aparece
-          // Mas para simplificar e manter consistência com o pedido do usuário:
-          // Vamos considerar recorrentes se a data original for <= data atual do filtro
-          // A lógica original simplesmente retornava true. Vamos melhorar:
-          const txDate = parseLocalDate(t.date);
-          if (!txDate) return false;
-          if (txDate.getFullYear() < now.getFullYear() || (txDate.getFullYear() === now.getFullYear() && txDate.getMonth() <= now.getMonth())) {
-             return true;
-          }
-        }
-
         const txDate = parseLocalDate(t.date);
         if (!txDate) return false;
         if(period === 'month') {
@@ -4317,6 +4360,10 @@
 
     function saveTransaction(e) {
       e.preventDefault();
+      const existingTx = editingTxId ? State.transactions.find(t => t.id === editingTxId) : null;
+      const recurringId = State.isRecurring
+        ? (existingTx?.recurringId || `${Date.now()}_r`)
+        : null;
       
       const tx = {
         id: editingTxId || Date.now().toString(),
@@ -4329,17 +4376,30 @@
         paymentMethod: State.selectedPaymentMethod,
         status: currentTxStatus,
         recurring: State.isRecurring,
-        recurringId: State.isRecurring ? (editingTxId ? null : Date.now().toString() + '_r') : null,
+        recurringId,
         isRecurringInstance: false
       };
       
       if(editingTxId) {
-        const idx = State.transactions.findIndex(t => t.id === editingTxId);
-        if(idx > -1) State.transactions[idx] = tx;
-        showToast('Transação atualizada com sucesso!');
+        if (State.isRecurring && !existingTx?.recurring) {
+          State.transactions = State.transactions.filter(t => t.id !== editingTxId);
+          const series = buildRecurringSeries(tx);
+          State.transactions.unshift(...series);
+          showToast(`Recorrência criada até dezembro: ${series.length} lançamentos.`);
+        } else {
+          const idx = State.transactions.findIndex(t => t.id === editingTxId);
+          if(idx > -1) State.transactions[idx] = tx;
+          showToast('Transação atualizada com sucesso!');
+        }
       } else {
-        State.transactions.unshift(tx);
-        showToast('Transação salva com sucesso!');
+        if (State.isRecurring) {
+          const series = buildRecurringSeries(tx);
+          State.transactions.unshift(...series);
+          showToast(`Recorrência criada até dezembro: ${series.length} lançamentos.`);
+        } else {
+          State.transactions.unshift(tx);
+          showToast('Transação salva com sucesso!');
+        }
       }
       
       closeModalTx();
