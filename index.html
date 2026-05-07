@@ -531,6 +531,12 @@
     .budget-sub { margin-top: 4px; font-size: 11px; color: #6b8a99; }
     .budget-input { width: 132px; }
     .settings-action-btn { width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0, 180, 160, 0.12); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.18); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .data-health-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .data-health-item { padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
+    .data-health-label { color: #6b8a99; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .data-health-value { margin-top: 5px; color: #ffffff; font-size: 14px; font-weight: 800; line-height: 1.25; word-break: break-word; }
+    .data-health-note { margin-top: 4px; color: #86a8b7; font-size: 11px; line-height: 1.4; }
+    @media (max-width: 520px) { .data-health-grid { grid-template-columns: 1fr; } }
     .account-summary-list { display: grid; gap: 10px; }
     .account-summary-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); }
     .account-summary-name { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -1503,6 +1509,17 @@
 
       <div class="card mt-4">
         <div class="section-header">
+          <h2 class="section-title">Saúde dos Dados</h2>
+          <span id="settings-data-health-status" class="text-xs text-brand font-semibold">Protegido</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div id="settings-data-health" class="data-health-grid"></div>
+          <div class="text-xs text-[#86a8b7] leading-5">Use esta área para conferir rapidamente se os dados estão salvos, sincronizados e com recuperação local disponível.</div>
+        </div>
+      </div>
+
+      <div class="card mt-4">
+        <div class="section-header">
           <h2 class="section-title">Minha Assinatura</h2>
           <span id="subscription-status-pill" class="text-xs text-brand font-semibold">Ativo</span>
         </div>
@@ -2429,6 +2446,7 @@
       renderReports();
       renderSettingsAccounts();
       renderBudgetSettings();
+      renderDataHealthPanel();
     }
 
     function persistAndRefresh() {
@@ -2461,6 +2479,91 @@
         chip.classList.remove('warn', 'off', 'saving');
         if (['warn', 'off', 'saving'].includes(mode)) chip.classList.add(mode);
       }
+      renderDataHealthPanel();
+    }
+
+    function formatDataHealthDate(value) {
+      const time = parseTimestamp(value);
+      if (!time) return 'Ainda não registrado';
+      return new Date(time).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getRecoverySnapshotStats(email = currentSessionUser?.email || State.profile?.email || 'guest') {
+      const stats = { count: 0, latestAt: 0, latestCount: 0 };
+      try {
+        const prefix = getRecoverySnapshotPrefix(email);
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const key = localStorage.key(i);
+          if (!key?.startsWith(prefix)) continue;
+          stats.count += 1;
+          try {
+            const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+            const payload = extractStatePayload(parsed);
+            const createdAt = parseTimestamp(parsed.created_at) || Number(key.slice(prefix.length)) || 0;
+            if (createdAt >= stats.latestAt) {
+              stats.latestAt = createdAt;
+              stats.latestCount = countStateTransactions(payload);
+            }
+          } catch (_) {
+            const createdAt = Number(key.slice(prefix.length)) || 0;
+            if (createdAt >= stats.latestAt) stats.latestAt = createdAt;
+          }
+        }
+      } catch (_) {
+        return stats;
+      }
+      return stats;
+    }
+
+    function renderDataHealthPanel() {
+      const container = document.getElementById('settings-data-health');
+      if (!container) return;
+      const status = document.getElementById('settings-data-health-status');
+      const email = currentSessionUser?.email || State.profile?.email || 'guest';
+      const localUpdatedAt = getLocalStateUpdatedAt(email);
+      const recoveryStats = getRecoverySnapshotStats(email);
+      const protectedRestore = getProtectedRestoreState(email);
+      const transactionCount = countStateTransactions(State);
+      const syncText = document.getElementById('settings-sync-text')?.textContent?.trim() || 'Sincronização não iniciada';
+      const accountLabel = currentSessionUser?.email || State.profile?.email || 'Modo local';
+      const recoveryLabel = protectedRestore
+        ? `Proteção ativa: ${protectedRestore.count} transações`
+        : recoveryStats.count > 0
+          ? `${recoveryStats.count} cópias locais`
+          : 'Aguardando primeiro backup';
+      const recoveryNote = recoveryStats.latestAt
+        ? `Última cópia: ${formatDataHealthDate(recoveryStats.latestAt)}`
+        : 'O app cria cópias automáticas quando houver dados.';
+      const statusText = currentSessionUser
+        ? (isCloudSyncRunning ? 'Sincronizando' : 'Protegido')
+        : 'Local';
+      if (status) {
+        status.textContent = statusText;
+        status.className = `text-xs font-semibold ${statusText === 'Protegido' ? 'text-brand' : statusText === 'Sincronizando' ? 'text-warning' : 'text-[#86a8b7]'}`;
+      }
+
+      const item = (label, value, note) => `
+        <div class="data-health-item">
+          <div class="data-health-label">${escapeHtml(label)}</div>
+          <div class="data-health-value">${escapeHtml(value)}</div>
+          <div class="data-health-note">${escapeHtml(note)}</div>
+        </div>
+      `;
+
+      container.innerHTML = [
+        item('Conta', accountLabel, currentSessionUser ? 'Dados vinculados ao login atual.' : 'Entre na conta para backup na nuvem.'),
+        item('Transações', String(transactionCount), 'Lançamentos principais salvos no app.'),
+        item('Salvo no aparelho', formatDataHealthDate(localUpdatedAt), 'Última gravação local confirmada.'),
+        item('Recuperação local', recoveryLabel, recoveryNote),
+        item('Nuvem', syncText, currentSessionUser ? 'Status atual da sincronização.' : 'Disponível após login.'),
+        item('Proteção', allowEmptyCloudOverwriteOnce ? 'Sobrescrita liberada' : 'Bloqueio ativo', allowEmptyCloudOverwriteOnce ? 'A próxima sincronização vazia foi autorizada.' : 'Sincronização vazia é bloqueada quando houver dados na nuvem.')
+      ].join('');
     }
 
     function setAccessNote(text = '') {
@@ -5864,6 +5967,7 @@
       updateProfilePhoto();
       renderSettingsAccounts();
       renderBudgetSettings();
+      renderDataHealthPanel();
       if (currentAllowedAccess) {
         setAccessNote(getAccessNoteText(currentAllowedAccess));
         renderAccessSummary(currentAllowedAccess);
