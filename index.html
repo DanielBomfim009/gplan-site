@@ -1558,6 +1558,12 @@
             </div>
           </button>
           <input type="file" id="backup-import-input" accept=".json,application/json" class="hidden" onchange="importData(event)">
+          <button onclick="recoverBestLocalState()" class="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-[#0d1f2d] hover:bg-[#1a3649] transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a4 4 0 014 4v1m0 0l-3-3m3 3l3-3M7 21a4 4 0 01-4-4V7a4 4 0 014-4h7a4 4 0 014 4v1"/></svg>
+              <span class="text-sm text-[#e8f4f8]">Buscar recuperação local</span>
+            </div>
+          </button>
           <button onclick="clearAllData()" class="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-expense/10 hover:bg-expense/20 transition-colors">
             <div class="flex items-center gap-3 min-w-0">
               <svg class="w-5 h-5 text-expense" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -1978,6 +1984,7 @@
     const DEFAULT_ACCESS_DAYS = 30;
     const DEFAULT_TRIAL_MINUTES = 30;
     const LOCAL_STATE_PREFIX = 'golbuy_v7';
+    const RECOVERY_STATE_PREFIX = `${LOCAL_STATE_PREFIX}:recovery`;
     let supabaseClient = null;
     let authMode = 'login';
     let currentSessionUser = null;
@@ -1993,6 +2000,7 @@
     let accessLockActive = false;
     let isCloudSyncRunning = false;
     let pendingCloudSync = false;
+    let allowEmptyCloudOverwriteOnce = false;
     let accessValidationTimer = null;
     let lastAccessValidationAt = 0;
     let isAdminRefreshRunning = false;
@@ -2648,8 +2656,52 @@
       return JSON.parse(JSON.stringify(State));
     }
 
-    function applyHydratedState(parsed) {
-      Object.assign(State, parsed);
+    function extractStatePayload(raw) {
+      if (!raw) return null;
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return parsed?.app_state || parsed?.state || parsed?.data?.app_state || parsed?.data?.state || parsed;
+    }
+
+    function countStateTransactions(raw) {
+      const payload = extractStatePayload(raw);
+      return Array.isArray(payload?.transactions)
+        ? payload.transactions.filter(t => !t?.isRecurringInstance).length
+        : 0;
+    }
+
+    function hasRecoverableState(raw) {
+      const payload = extractStatePayload(raw);
+      return Boolean(payload && typeof payload === 'object' && (
+        Array.isArray(payload.transactions) ||
+        Array.isArray(payload.goals) ||
+        Array.isArray(payload.accounts) ||
+        payload.profile
+      ));
+    }
+
+    function applyHydratedState(raw) {
+      const parsed = extractStatePayload(raw);
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Backup vazio ou em formato inválido.');
+      }
+
+      const fresh = cloneDefaultState();
+      const next = {
+        ...fresh,
+        ...parsed,
+        profile: { ...fresh.profile, ...(parsed.profile || {}) },
+        accounts: Array.isArray(parsed.accounts) && parsed.accounts.length ? parsed.accounts : fresh.accounts,
+        budgets: { ...fresh.budgets, ...(parsed.budgets || {}) },
+        categories: {
+          expense: Array.isArray(parsed.categories?.expense) && parsed.categories.expense.length ? parsed.categories.expense : fresh.categories.expense,
+          income: Array.isArray(parsed.categories?.income) && parsed.categories.income.length ? parsed.categories.income : fresh.categories.income
+        },
+        transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+        goals: Array.isArray(parsed.goals) ? parsed.goals : []
+      };
+
+      Object.keys(State).forEach(key => delete State[key]);
+      Object.assign(State, next);
       State.dashboardCustomDate = State.dashboardCustomDate ? new Date(State.dashboardCustomDate) : new Date();
       State.controlCustomDate = State.controlCustomDate ? new Date(State.controlCustomDate) : new Date();
       State.txCustomDate = State.txCustomDate ? new Date(State.txCustomDate) : new Date();
@@ -2662,6 +2714,73 @@
         recurringId: t.recurringId || null,
         isRecurringInstance: t.isRecurringInstance || false
       }));
+    }
+
+    function createRecoverySnapshot(reason = 'snapshot') {
+      try {
+        const email = normalizeEmail(currentSessionUser?.email || State.profile?.email || 'guest') || 'guest';
+        const snapshot = {
+          app: 'Controle Financeiro',
+          type: 'local_recovery_snapshot',
+          reason,
+          email,
+          created_at: new Date().toISOString(),
+          app_state: sanitizeStateForCloud()
+        };
+        localStorage.setItem(`${RECOVERY_STATE_PREFIX}:${email}:${Date.now()}`, JSON.stringify(snapshot));
+      } catch (error) {
+        console.warn('Falha ao criar ponto de recuperação local:', error);
+      }
+    }
+
+    function getLocalStateCandidates() {
+      const candidates = [];
+      const seen = new Set();
+      const pushCandidate = (key) => {
+        if (!key || seen.has(key) || key.endsWith(':meta')) return;
+        seen.add(key);
+        try {
+          const raw = localStorage.getItem(key);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          const payload = extractStatePayload(parsed);
+          if (!hasRecoverableState(payload)) return;
+          const meta = (() => {
+            try { return JSON.parse(localStorage.getItem(`${key}:meta`) || '{}'); } catch (_) { return {}; }
+          })();
+          const count = countStateTransactions(payload);
+          candidates.push({
+            key,
+            payload,
+            count,
+            email: normalizeEmail(payload?.profile?.email || parsed?.email || ''),
+            updatedAt: meta.updated_at || parsed?.updated_at || parsed?.created_at || null
+          });
+        } catch (_) {
+          return;
+        }
+      };
+
+      pushCandidate(getLocalStateKey(currentSessionUser?.email || State.profile?.email || 'guest'));
+      pushCandidate('golbuy_v6');
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (
+          key === 'golbuy_v6' ||
+          key?.startsWith(`${LOCAL_STATE_PREFIX}:`) ||
+          key?.startsWith(`${RECOVERY_STATE_PREFIX}:`) ||
+          /^golbuy_v\d+:/i.test(key || '')
+        ) {
+          pushCandidate(key);
+        }
+      }
+
+      return candidates
+        .filter(candidate => candidate.count > 0)
+        .sort((a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return parseTimestamp(b.updatedAt) - parseTimestamp(a.updatedAt);
+        });
     }
 
     function applyManagedIdentityToState() {
@@ -3503,9 +3622,32 @@
         const accessOk = await validateCurrentAccessStatus();
         if (!accessOk) return;
         setSyncStatus('Salvando na nuvem...', 'saving', 'Não feche o app até a confirmação aparecer.');
+        const appState = sanitizeStateForCloud();
+        const nextTransactionCount = countStateTransactions(appState);
+        if (nextTransactionCount === 0 && !allowEmptyCloudOverwriteOnce) {
+          const { data: existingState, error: existingStateError } = await withTimeout(
+            client.from(SUPABASE_STATE_TABLE)
+              .select('app_state, updated_at')
+              .eq('user_id', currentSessionUser.id)
+              .maybeSingle(),
+            10000,
+            'Tempo limite ao proteger dados existentes.'
+          );
+          if (existingStateError) throw existingStateError;
+          const existingTransactionCount = countStateTransactions(existingState?.app_state);
+          if (existingTransactionCount > 0) {
+            setSyncStatus(
+              'Proteção de dados ativada.',
+              'off',
+              `A nuvem tem ${existingTransactionCount} transações e a tela atual está vazia. A sincronização vazia foi bloqueada.`
+            );
+            if (!silent) showToast('Sincronização vazia bloqueada para proteger suas transações.', 'error');
+            return;
+          }
+        }
         const payload = {
           user_id: currentSessionUser.id,
-          app_state: sanitizeStateForCloud(),
+          app_state: appState,
           updated_at: new Date().toISOString()
         };
         const { error } = await withTimeout(
@@ -3523,6 +3665,7 @@
         setSyncStatus('Erro ao salvar na nuvem.', 'off', message);
         if (!silent) showToast(`Não foi possível sincronizar: ${message}`, 'error');
       } finally {
+        allowEmptyCloudOverwriteOnce = false;
         isCloudSyncRunning = false;
         if (pendingCloudSync && currentSessionUser) {
           pendingCloudSync = false;
@@ -5549,7 +5692,13 @@
     }
 
     function exportData() {
-      const data = JSON.stringify(State, null, 2);
+      const data = JSON.stringify({
+        app: 'Controle Financeiro',
+        type: 'backup',
+        exported_at: new Date().toISOString(),
+        email: currentSessionUser?.email || State.profile?.email || '',
+        app_state: sanitizeStateForCloud()
+      }, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -5567,22 +5716,34 @@
       reader.onload = async (loadEvent) => {
         try {
           const parsed = JSON.parse(String(loadEvent.target?.result || '{}'));
+          const payload = extractStatePayload(parsed);
+          if (!hasRecoverableState(payload)) {
+            throw new Error('Arquivo sem dados reconhecíveis do Controle Financeiro.');
+          }
+          const txCount = countStateTransactions(payload);
+          const currentCount = countStateTransactions(State);
+          if (txCount === 0 && currentCount > 0 && !confirm('Este backup não possui transações. Deseja importar mesmo assim?')) {
+            return;
+          }
+          if (txCount === 0) allowEmptyCloudOverwriteOnce = true;
+          createRecoverySnapshot('antes-da-importacao');
           resetStateToDefaults({
             email: currentSessionUser?.email || '',
             name: currentAccessProfile?.full_name || currentSessionUser?.email?.split('@')[0] || '',
             photo: null
           });
-          applyHydratedState(parsed);
+          applyHydratedState(payload);
+          applyManagedIdentityToState();
           refreshAppViews();
           renderGoals();
           populateAccountOptions();
           updateAllAvatars();
           DB.save();
           await syncCloudNow(true);
-          showToast('Cópia de segurança importada com sucesso!');
+          showToast(`Backup importado com ${txCount} transações.`);
         } catch (error) {
           console.error('Falha ao importar backup:', error);
-          showToast('Não foi possível importar este arquivo.', 'error');
+          showToast(error?.message || 'Não foi possível importar este arquivo.', 'error');
         } finally {
           event.target.value = '';
         }
@@ -5590,8 +5751,56 @@
       reader.readAsText(file);
     }
 
+    async function recoverBestLocalState() {
+      try {
+        const currentCount = countStateTransactions(State);
+        const candidates = getLocalStateCandidates()
+          .filter(candidate => candidate.count > currentCount || currentCount === 0);
+
+        if (!candidates.length) {
+          showToast('Nenhuma recuperação local com transações foi encontrada neste navegador.', 'error');
+          return;
+        }
+
+        const best = candidates[0];
+        const when = best.updatedAt
+          ? new Date(best.updatedAt).toLocaleString('pt-BR')
+          : 'data não identificada';
+        const message = [
+          `Encontrei uma cópia local com ${best.count} transações.`,
+          `Origem: ${best.key}`,
+          `Atualização: ${when}`,
+          '',
+          'Deseja restaurar essa cópia agora? O estado atual será salvo antes como ponto de recuperação.'
+        ].join('\n');
+
+        if (!confirm(message)) return;
+
+        createRecoverySnapshot('antes-da-recuperacao-local');
+        resetStateToDefaults({
+          email: currentSessionUser?.email || '',
+          name: currentAccessProfile?.full_name || currentSessionUser?.email?.split('@')[0] || '',
+          photo: null
+        });
+        applyHydratedState(best.payload);
+        applyManagedIdentityToState();
+        refreshAppViews();
+        renderGoals();
+        populateAccountOptions();
+        updateAllAvatars();
+        DB.save();
+        await syncCloudNow(true);
+        showToast(`Recuperação concluída: ${best.count} transações restauradas.`);
+      } catch (error) {
+        console.error('Falha na recuperação local:', error);
+        showToast(error?.message || 'Não foi possível recuperar os dados locais.', 'error');
+      }
+    }
+
     function clearAllData() {
       if(confirm('Tem certeza que deseja apagar todos os dados?')) {
+        createRecoverySnapshot('antes-de-apagar-tudo');
+        allowEmptyCloudOverwriteOnce = true;
         resetStateToDefaults({
           email: currentSessionUser?.email || '',
           name: currentAccessProfile?.full_name || currentSessionUser?.email?.split('@')[0] || '',
