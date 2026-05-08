@@ -998,6 +998,13 @@
         </div>
       </div>
 
+      <div class="section-tabs mt-4" aria-label="Seções do painel">
+        <button type="button" class="section-tab-btn active" data-dashboard-tab="overview" onclick="switchDashboardTab('overview')">Visão</button>
+        <button type="button" class="section-tab-btn" data-dashboard-tab="analysis" onclick="switchDashboardTab('analysis')">Análise</button>
+        <button type="button" class="section-tab-btn" data-dashboard-tab="actions" onclick="switchDashboardTab('actions')">Ações</button>
+      </div>
+
+      <div data-dashboard-panel="overview">
       <div class="card mt-4">
         <div class="section-header">
           <h2 class="section-title">Saúde Financeira</h2>
@@ -1024,16 +1031,6 @@
         </div>
       </div>
 
-      <div class="card mt-4">
-        <div class="section-header">
-          <h2 class="section-title">Insights do Mês</h2>
-          <button class="text-xs font-semibold text-brand hover:text-brand-light transition-colors" onclick="openPage('reports')">Ver análise</button>
-        </div>
-        <div class="p-4">
-          <div id="dashboard-insights" class="insight-list"></div>
-        </div>
-      </div>
-      
       <!-- Pendências -->
       <div id="pending-alerts" class="mt-4 hidden">
         <div class="card p-4" style="border-left: 4px solid #ff8a50;">
@@ -1059,8 +1056,35 @@
           <button onclick="openPage('control')" class="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold transition-colors" style="background: rgba(255, 138, 80, 0.15); color: #ff8a50;">Ver Controle de Pagamentos</button>
         </div>
       </div>
+      </div>
+
+      <div data-dashboard-panel="analysis" class="hidden">
+      <div class="card mt-4">
+        <div class="section-header">
+          <h2 class="section-title">Insights do Mês</h2>
+          <button class="text-xs font-semibold text-brand hover:text-brand-light transition-colors" onclick="openPage('reports')">Ver análise</button>
+        </div>
+        <div class="p-4">
+          <div id="dashboard-insights" class="insight-list"></div>
+        </div>
+      </div>
+
+      <!-- Gastos por Categoria -->
+      <div class="card mt-4">
+        <div class="section-header">
+          <h2 class="section-title">Gastos por Categoria</h2>
+        </div>
+        <div class="px-4 pb-4">
+          <div id="dash-categories-empty" class="py-8 text-center text-[#6b8a99]">
+            <p class="text-sm">Sem despesas registradas</p>
+          </div>
+          <div id="dash-categories" class="hidden"></div>
+        </div>
+      </div>
+      </div>
       
       <!-- Ações rápidas -->
+      <div data-dashboard-panel="actions" class="hidden">
       <div class="mt-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
           <h2 class="font-display text-base font-semibold text-white">Ações Rápidas</h2>
@@ -1099,19 +1123,6 @@
         </div>
       </div>
       
-      <!-- Gastos por Categoria -->
-      <div class="card mt-4">
-        <div class="section-header">
-          <h2 class="section-title">Gastos por Categoria</h2>
-        </div>
-        <div class="px-4 pb-4">
-          <div id="dash-categories-empty" class="py-8 text-center text-[#6b8a99]">
-            <p class="text-sm">Sem despesas registradas</p>
-          </div>
-          <div id="dash-categories" class="hidden"></div>
-        </div>
-      </div>
-      
       <!-- Transações Recentes -->
       <div class="card mt-4 mb-4">
         <div class="section-header">
@@ -1124,6 +1135,7 @@
           </div>
           <div id="dash-tx-list" class="hidden space-y-1"></div>
         </div>
+      </div>
       </div>
     </section>
 
@@ -2106,6 +2118,7 @@
     let activeSettingsTab = 'profile';
     let activeReportTab = 'summary';
     let activeControlTab = 'income';
+    let activeDashboardTab = 'overview';
 
     const DEFAULT_STATE_TEMPLATE = {
       transactions: [],
@@ -2811,6 +2824,19 @@
       });
       if (scroll && !document.getElementById('page-control')?.classList.contains('hidden')) {
         document.querySelector('#page-control .section-tabs')?.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function switchDashboardTab(tab = 'overview', { scroll = true } = {}) {
+      activeDashboardTab = tab;
+      document.querySelectorAll('[data-dashboard-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.dashboardTab === tab);
+      });
+      document.querySelectorAll('[data-dashboard-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.dashboardPanel !== tab);
+      });
+      if (scroll && !document.getElementById('page-dashboard')?.classList.contains('hidden')) {
+        document.querySelector('#page-dashboard .section-tabs')?.scrollIntoView({ block: 'nearest' });
       }
     }
 
@@ -4331,7 +4357,7 @@
       if(page === 'reports') { renderReports(); initReportDatePicker(); switchReportTab(activeReportTab, { scroll: false }); }
       if(page === 'settings') loadProfileToSettings();
       if(page === 'control') { renderControlPage(); initControlDatePicker(); switchControlTab(activeControlTab, { scroll: false }); }
-      if(page === 'dashboard') updateDashboard();
+      if(page === 'dashboard') { updateDashboard(); switchDashboardTab(activeDashboardTab, { scroll: false }); }
       if(page === 'admin') loadAdminPage();
       
       updateAllAvatars();
