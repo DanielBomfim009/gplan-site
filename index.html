@@ -387,6 +387,10 @@
     .period-context-action.secondary { background: rgba(19, 42, 60, 0.78); color: #c8faf4; border-color: rgba(0, 180, 160, 0.16); }
     .period-context-action:hover { background: rgba(0, 180, 160, 0.2); }
     .period-context-popover { position: absolute; top: calc(100% + 8px); right: 16px; z-index: 90; width: min(286px, calc(100vw - 32px)); padding: 12px; border-radius: 16px; background: rgba(8, 24, 36, 0.98); border: 1px solid rgba(0, 180, 160, 0.2); box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36); backdrop-filter: blur(12px); }
+    .filter-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 95; width: min(286px, calc(100vw - 32px)); padding: 12px; border-radius: 16px; background: rgba(8, 24, 36, 0.98); border: 1px solid rgba(0, 180, 160, 0.2); box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36); backdrop-filter: blur(12px); }
+    .filter-popover.menu { padding: 6px; }
+    .filter-popover.full { left: 0; right: auto; width: 100%; }
+    .filter-popover .month-selector { background: rgba(19, 42, 60, 0.92); padding: 7px 9px; }
     .period-popover-title { margin: 0 0 8px; color: #9fc2ce; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
     .period-context-popover .month-selector { background: rgba(19, 42, 60, 0.92); padding: 7px 9px; }
     @media (max-width: 420px) {
@@ -1203,14 +1207,14 @@
               <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10 text-brand font-semibold" onclick="setControlPeriod('custom', 'Mês específico')">Mês específico</button>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div id="control-month-picker" class="hidden mt-3">
-        <div class="month-selector">
-          <div class="month-btn" onclick="changeControlMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
-          <input type="month" id="control-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateControlFromInput(this.value)">
-          <div class="month-btn" onclick="changeControlMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+          <div id="control-month-picker" class="filter-popover hidden">
+            <p class="period-popover-title">Escolha o mês</p>
+            <div class="month-selector">
+              <div class="month-btn" onclick="changeControlMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+              <input type="month" id="control-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateControlFromInput(this.value)">
+              <div class="month-btn" onclick="changeControlMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1260,25 +1264,38 @@
         </div>
       </div>
       
-      <!-- Filtro Mês Transações -->
-      <div class="mt-4 mb-2">
-        <div class="month-selector">
-          <div class="month-btn" onclick="changeTxMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
-          <input type="month" id="tx-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateTxFromInput(this.value)">
-          <div class="month-btn" onclick="changeTxMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+      <div class="period-context-card mt-4">
+        <div class="min-w-0">
+          <span class="period-context-label">Mês das transações</span>
+          <strong class="period-context-value" id="tx-context-period">Mês atual</strong>
+          <span class="period-context-detail" id="tx-context-detail">Lançamentos do período selecionado</span>
+        </div>
+        <div class="period-context-actions">
+          <button type="button" class="period-context-action secondary" onclick="setTxCurrentMonth()">Mês atual</button>
+          <button type="button" class="period-context-action" data-tx-month-toggle onclick="toggleTxMonthPicker()">Selecionar mês</button>
+        </div>
+        <div id="tx-month-picker" class="period-context-popover hidden">
+          <p class="period-popover-title">Escolha o mês</p>
+          <div class="month-selector">
+            <div class="month-btn" onclick="changeTxMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+            <input type="month" id="tx-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateTxFromInput(this.value)">
+            <div class="month-btn" onclick="changeTxMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+          </div>
         </div>
       </div>
 
       <div class="space-y-3 mt-3">
-        <div class="dropdown w-full text-left" onclick="toggleDropdown('filter-type')">
-          <span id="filter-type-label">Todas</span>
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-        <div id="dropdown-filter-type" class="hidden bg-[#132a3c] border border-brand/15 rounded-xl shadow-xl z-50 w-full">
-          <div class="py-1">
-            <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'all', 'Todas')">Todas</button>
-            <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'income', 'Receitas')">Receitas</button>
-            <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'expense', 'Despesas')">Despesas</button>
+        <div class="relative">
+          <div class="dropdown w-full text-left" onclick="toggleDropdown('filter-type')">
+            <span id="filter-type-label">Todas</span>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div id="dropdown-filter-type" class="hidden filter-popover menu full">
+            <div class="py-1">
+              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'all', 'Todas')">Todas</button>
+              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'income', 'Receitas')">Receitas</button>
+              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'expense', 'Despesas')">Despesas</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1395,12 +1412,23 @@
         </div>
       </div>
 
-      <!-- Filtro de Relatórios -->
-      <div class="mt-4 mb-2">
-        <div class="month-selector">
-          <div class="month-btn" onclick="changeReportMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
-          <input type="month" id="report-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateReportFromInput(this.value)">
-          <div class="month-btn" onclick="changeReportMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+      <div class="period-context-card mt-4">
+        <div class="min-w-0">
+          <span class="period-context-label">Mês do relatório</span>
+          <strong class="period-context-value" id="report-context-period">Mês atual</strong>
+          <span class="period-context-detail" id="report-context-detail">Indicadores do período selecionado</span>
+        </div>
+        <div class="period-context-actions">
+          <button type="button" class="period-context-action secondary" onclick="setReportCurrentMonth()">Mês atual</button>
+          <button type="button" class="period-context-action" data-report-month-toggle onclick="toggleReportMonthPicker()">Selecionar mês</button>
+        </div>
+        <div id="report-month-picker" class="period-context-popover hidden">
+          <p class="period-popover-title">Escolha o mês</p>
+          <div class="month-selector">
+            <div class="month-btn" onclick="changeReportMonth(-1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></div>
+            <input type="month" id="report-date-input" class="bg-transparent text-center text-white text-sm font-semibold w-full outline-none cursor-pointer" onchange="updateReportFromInput(this.value)">
+            <div class="month-btn" onclick="changeReportMonth(1)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+          </div>
         </div>
       </div>
 
@@ -4371,12 +4399,43 @@
       const y = State.txCustomDate.getFullYear();
       const m = String(State.txCustomDate.getMonth() + 1).padStart(2, '0');
       input.value = `${y}-${m}`;
+      updateTxPeriodContext();
+    }
+
+    function updateTxPeriodContext() {
+      safeSetText('tx-context-period', getMonthLabel(State.txCustomDate));
+      safeSetText('tx-context-detail', 'Lançamentos do período selecionado.');
+    }
+
+    function closeTxMonthPicker() {
+      document.getElementById('tx-month-picker')?.classList.add('hidden');
+    }
+
+    function toggleTxMonthPicker() {
+      const picker = document.getElementById('tx-month-picker');
+      const input = document.getElementById('tx-date-input');
+      if (!picker || !input) return;
+      const y = State.txCustomDate.getFullYear();
+      const m = String(State.txCustomDate.getMonth() + 1).padStart(2, '0');
+      input.value = `${y}-${m}`;
+      picker.classList.toggle('hidden');
+      closeAllDropdowns();
+    }
+
+    function setTxCurrentMonth() {
+      const now = new Date();
+      State.txCustomDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const input = document.getElementById('tx-date-input');
+      if (input) input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      closeTxMonthPicker();
+      renderTransactions();
     }
 
     function updateTxFromInput(val) {
       if(!val) return;
       const [y, m] = val.split('-');
       State.txCustomDate = new Date(y, m - 1, 1);
+      closeTxMonthPicker();
       renderTransactions();
     }
 
@@ -4384,7 +4443,8 @@
       State.txCustomDate.setMonth(State.txCustomDate.getMonth() + delta);
       const y = State.txCustomDate.getFullYear();
       const m = String(State.txCustomDate.getMonth() + 1).padStart(2, '0');
-      document.getElementById('tx-date-input').value = `${y}-${m}`;
+      const input = document.getElementById('tx-date-input');
+      if (input) input.value = `${y}-${m}`;
       renderTransactions();
     }
 
@@ -4396,7 +4456,9 @@
       const y = State.controlCustomDate.getFullYear();
       const m = String(State.controlCustomDate.getMonth() + 1).padStart(2, '0');
       input.value = `${y}-${m}`;
-      picker.classList.toggle('hidden', State.controlPeriod !== 'custom');
+      if (State.controlPeriod === 'custom') {
+        safeSetText('control-period-label', getMonthLabel(State.controlCustomDate));
+      }
     }
 
     function updateControlFromInput(val) {
@@ -4404,7 +4466,8 @@
       const [y, m] = val.split('-');
       State.controlCustomDate = new Date(y, m - 1, 1);
       State.controlPeriod = 'custom';
-      document.getElementById('control-period-label').textContent = 'Mês específico';
+      document.getElementById('control-period-label').textContent = getMonthLabel(State.controlCustomDate);
+      closeControlMonthPicker();
       renderControlPage();
     }
 
@@ -4412,10 +4475,22 @@
       State.controlCustomDate.setMonth(State.controlCustomDate.getMonth() + delta);
       const y = State.controlCustomDate.getFullYear();
       const m = String(State.controlCustomDate.getMonth() + 1).padStart(2, '0');
-      document.getElementById('control-date-input').value = `${y}-${m}`;
+      const input = document.getElementById('control-date-input');
+      if (input) input.value = `${y}-${m}`;
       State.controlPeriod = 'custom';
-      document.getElementById('control-period-label').textContent = 'Mês específico';
+      document.getElementById('control-period-label').textContent = getMonthLabel(State.controlCustomDate);
       renderControlPage();
+    }
+
+    function closeControlMonthPicker() {
+      document.getElementById('control-month-picker')?.classList.add('hidden');
+    }
+
+    function openControlMonthPicker() {
+      const picker = document.getElementById('control-month-picker');
+      if (!picker) return;
+      initControlDatePicker();
+      picker.classList.remove('hidden');
     }
 
     // FUNÇÕES DO SELETOR DE MÊS (RELATÓRIOS)
@@ -4424,12 +4499,43 @@
       const y = State.reportCustomDate.getFullYear();
       const m = String(State.reportCustomDate.getMonth() + 1).padStart(2, '0');
       input.value = `${y}-${m}`;
+      updateReportPeriodContext();
+    }
+
+    function updateReportPeriodContext() {
+      safeSetText('report-context-period', getMonthLabel(State.reportCustomDate));
+      safeSetText('report-context-detail', 'Indicadores do período selecionado.');
+    }
+
+    function closeReportMonthPicker() {
+      document.getElementById('report-month-picker')?.classList.add('hidden');
+    }
+
+    function toggleReportMonthPicker() {
+      const picker = document.getElementById('report-month-picker');
+      const input = document.getElementById('report-date-input');
+      if (!picker || !input) return;
+      const y = State.reportCustomDate.getFullYear();
+      const m = String(State.reportCustomDate.getMonth() + 1).padStart(2, '0');
+      input.value = `${y}-${m}`;
+      picker.classList.toggle('hidden');
+      closeAllDropdowns();
+    }
+
+    function setReportCurrentMonth() {
+      const now = new Date();
+      State.reportCustomDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const input = document.getElementById('report-date-input');
+      if (input) input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      closeReportMonthPicker();
+      renderReports();
     }
 
     function updateReportFromInput(val) {
       if(!val) return;
       const [y, m] = val.split('-');
       State.reportCustomDate = new Date(y, m - 1, 1);
+      closeReportMonthPicker();
       renderReports();
     }
 
@@ -4437,7 +4543,8 @@
       State.reportCustomDate.setMonth(State.reportCustomDate.getMonth() + delta);
       const y = State.reportCustomDate.getFullYear();
       const m = String(State.reportCustomDate.getMonth() + 1).padStart(2, '0');
-      document.getElementById('report-date-input').value = `${y}-${m}`;
+      const input = document.getElementById('report-date-input');
+      if (input) input.value = `${y}-${m}`;
       renderReports();
     }
 
@@ -4461,10 +4568,12 @@
     function setControlPeriod(value, label) {
       State.controlPeriod = value;
       document.getElementById('control-period-label').textContent = label;
-      const picker = document.getElementById('control-month-picker');
-      if (picker) picker.classList.toggle('hidden', value !== 'custom');
-      if (value === 'custom') initControlDatePicker();
       closeAllDropdowns();
+      if (value === 'custom') {
+        openControlMonthPicker();
+      } else {
+        closeControlMonthPicker();
+      }
       renderControlPage();
     }
 
@@ -5029,6 +5138,7 @@
     }
 
     function renderTransactions() {
+      updateTxPeriodContext();
       let visible = State.transactions.filter(t => !t.isRecurringInstance);
       
       // Filtro por mês customizado (não pelo filtro rápido currentFilter.period)
@@ -5124,6 +5234,7 @@
 
     // FUNÇÃO RELATÓRIO FUNCIONAL
     function renderReports() {
+      updateReportPeriodContext();
       const monthTx = filterByDateRange(State.transactions, State.reportCustomDate, 'month');
       
       const income = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -6451,12 +6562,24 @@
         if(!e.target.closest('#dashboard-month-picker') && !e.target.closest('[data-dashboard-month-toggle]')) {
           closeDashboardMonthPicker();
         }
+        if(!e.target.closest('#tx-month-picker') && !e.target.closest('[data-tx-month-toggle]')) {
+          closeTxMonthPicker();
+        }
+        if(!e.target.closest('#report-month-picker') && !e.target.closest('[data-report-month-toggle]')) {
+          closeReportMonthPicker();
+        }
+        if(!e.target.closest('#control-month-picker') && !e.target.closest('#dropdown-control-period') && !e.target.closest('[onclick*="control-period"]')) {
+          closeControlMonthPicker();
+        }
       });
 
       document.addEventListener('keydown', (e) => {
         if(e.key === 'Escape') {
           closeAllDropdowns();
           closeDashboardMonthPicker();
+          closeTxMonthPicker();
+          closeReportMonthPicker();
+          closeControlMonthPicker();
           toggleSidebar(false);
           closeModalTx();
           closeModalGoal();
