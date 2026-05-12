@@ -710,6 +710,17 @@
     .auth-tab { border: none; border-radius: 10px; background: transparent; color: #6b8a99; padding: 10px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .auth-tab.active { background: rgba(0, 180, 160, 0.15); color: #00b4a0; }
     .auth-panel { padding: 18px; border-radius: 18px; background: rgba(13, 31, 45, 0.72); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .auth-quick-card { margin-top: 14px; padding: 12px; border-radius: 14px; background: rgba(7, 18, 28, 0.42); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .auth-quick-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .auth-quick-title { color: #ffffff; font-size: 12px; font-weight: 800; }
+    .auth-quick-save { border: 0; background: transparent; color: #00b4a0; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .auth-quick-list { display: grid; gap: 8px; }
+    .auth-quick-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 10px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .auth-quick-name { color: #ffffff; font-size: 12px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .auth-quick-email { margin-top: 2px; color: #86a8b7; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .auth-quick-btn { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(0, 180, 160, 0.14); background: rgba(0, 180, 160, 0.10); color: #7fe6d7; font-size: 11px; font-weight: 800; cursor: pointer; }
+    .auth-quick-btn.danger { border-color: rgba(255, 82, 82, 0.14); background: rgba(255, 82, 82, 0.08); color: #ff9b9b; }
+    .auth-quick-empty { color: #6b8a99; font-size: 11px; line-height: 1.45; }
     .auth-status { margin-top: 14px; font-size: 12px; color: #6b8a99; min-height: 18px; line-height: 1.45; }
     .access-lock-shell { z-index: 1300; }
     .access-lock-icon { width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; background: rgba(255, 179, 0, 0.14); color: #ffcf5a; border: 1px solid rgba(255, 179, 0, 0.22); }
@@ -871,6 +882,12 @@
       .auth-subtitle {
         max-width: none;
       }
+      .auth-quick-item {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+      .auth-quick-btn.danger {
+        grid-column: 2;
+      }
       .modal-content {
         padding-inline: 16px;
       }
@@ -932,6 +949,14 @@
           </div>
           <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors">Entrar</button>
         </form>
+
+        <div class="auth-quick-card">
+          <div class="auth-quick-header">
+            <div class="auth-quick-title">Acesso rápido deste aparelho</div>
+            <button type="button" class="auth-quick-save" onclick="saveQuickAccessFromForm()">Salvar acesso</button>
+          </div>
+          <div id="quick-access-list" class="auth-quick-list"></div>
+        </div>
 
         <div id="auth-status" class="auth-status"></div>
       </div>
@@ -2318,12 +2343,14 @@
     const SUPABASE_STATE_TABLE = 'user_states';
     const SUPABASE_PROFILES_TABLE = 'app_profiles';
     const SUPABASE_ALLOWED_EMAILS_TABLE = 'allowed_emails';
+    const SUPABASE_PROJECT_REF = 'wdvrdxoawxlgkkdvayyy';
     const ADMIN_AUDIT_LIMIT = 20;
     const DEFAULT_ACCESS_DAYS = 30;
     const DEFAULT_TRIAL_MINUTES = 30;
     const LOCAL_STATE_PREFIX = 'golbuy_v7';
     const RECOVERY_STATE_PREFIX = `${LOCAL_STATE_PREFIX}:recovery`;
     const PROTECTED_RESTORE_PREFIX = `${LOCAL_STATE_PREFIX}:protected_restore`;
+    const QUICK_ACCESS_STORAGE_KEY = `${LOCAL_STATE_PREFIX}:quick_access`;
     const MAX_RECOVERY_SNAPSHOTS_PER_USER = 8;
     const AUTO_RECOVERY_MIN_INTERVAL_MS = 3 * 60 * 1000;
     let supabaseClient = null;
@@ -3228,6 +3255,110 @@
       document.getElementById('auth-tab-login')?.classList.toggle('active', mode === 'login');
       safeSetText('auth-submit-btn', 'Entrar');
       safeSetText('auth-status', 'Entre com o e-mail liberado pelo suporte e a senha temporária recebida.');
+      renderQuickAccessList();
+    }
+
+    function encodeQuickAccessSecret(value = '') {
+      try {
+        return btoa(unescape(encodeURIComponent(String(value))));
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function decodeQuickAccessSecret(value = '') {
+      try {
+        return decodeURIComponent(escape(atob(String(value || ''))));
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function getQuickAccessEntries() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(QUICK_ACCESS_STORAGE_KEY) || '[]');
+        return Array.isArray(parsed) ? parsed.filter(item => item?.email && item?.password) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function setQuickAccessEntries(entries = []) {
+      localStorage.setItem(QUICK_ACCESS_STORAGE_KEY, JSON.stringify(entries.slice(0, 6)));
+      renderQuickAccessList();
+    }
+
+    function renderQuickAccessList() {
+      const container = document.getElementById('quick-access-list');
+      if (!container) return;
+      const entries = getQuickAccessEntries();
+      if (!entries.length) {
+        container.innerHTML = '<div class="auth-quick-empty">Nenhum acesso rápido salvo neste aparelho.</div>';
+        return;
+      }
+
+      container.innerHTML = entries.map(entry => {
+        const label = entry.label || entry.email.split('@')[0] || 'Acesso';
+        return `
+          <div class="auth-quick-item">
+            <div class="min-w-0">
+              <div class="auth-quick-name">${escapeHtml(label)}</div>
+              <div class="auth-quick-email">${escapeHtml(entry.email)}</div>
+            </div>
+            <button type="button" class="auth-quick-btn" onclick="useQuickAccess('${escapeJsString(entry.id)}')">Acessar</button>
+            <button type="button" class="auth-quick-btn danger" onclick="removeQuickAccess('${escapeJsString(entry.id)}')">Remover</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveQuickAccessFromForm() {
+      const email = normalizeEmail(document.getElementById('auth-email')?.value || '');
+      const password = document.getElementById('auth-password')?.value || '';
+      if (!email || password.length < 6) {
+        safeSetText('auth-status', 'Informe e-mail e senha para salvar o acesso rápido.');
+        return;
+      }
+
+      const label = email.split('@')[0] || 'Acesso';
+      const now = new Date().toISOString();
+      const entries = getQuickAccessEntries().filter(item => normalizeEmail(item.email) !== email);
+      entries.unshift({
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        label,
+        email,
+        password: encodeQuickAccessSecret(password),
+        created_at: now,
+        updated_at: now
+      });
+      setQuickAccessEntries(entries);
+      safeSetText('auth-status', 'Acesso rápido salvo neste aparelho.');
+    }
+
+    function useQuickAccess(id) {
+      const entry = getQuickAccessEntries().find(item => item.id === id);
+      if (!entry) {
+        renderQuickAccessList();
+        safeSetText('auth-status', 'Acesso rápido não encontrado.');
+        return;
+      }
+      const password = decodeQuickAccessSecret(entry.password);
+      if (!password) {
+        safeSetText('auth-status', 'Acesso rápido inválido. Remova e salve novamente.');
+        return;
+      }
+      const emailInput = document.getElementById('auth-email');
+      const passwordInput = document.getElementById('auth-password');
+      if (emailInput) emailInput.value = entry.email;
+      if (passwordInput) passwordInput.value = password;
+      safeSetText('auth-status', `Acessando ${entry.email}...`);
+      document.getElementById('auth-form')?.requestSubmit();
+    }
+
+    function removeQuickAccess(id) {
+      const entries = getQuickAccessEntries().filter(item => item.id !== id);
+      setQuickAccessEntries(entries);
+      safeSetText('auth-status', 'Acesso rápido removido deste aparelho.');
     }
 
     function sanitizeStateForCloud() {
@@ -3750,8 +3881,9 @@
       }
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         auth: {
-          persistSession: true,
-          autoRefreshToken: true
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
         }
       });
       return supabaseClient;
@@ -3816,6 +3948,21 @@
 
     function isTrialEmail(email) {
       return /@trial\.controlefinanceiro\.app$/i.test(normalizeEmail(email));
+    }
+
+    function clearPersistedSupabaseSession() {
+      const keys = [
+        `sb-${SUPABASE_PROJECT_REF}-auth-token`,
+        `sb-${SUPABASE_PROJECT_REF}-code-verifier`
+      ];
+      keys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+          sessionStorage.removeItem(key);
+        } catch (_) {
+          return;
+        }
+      });
     }
 
     async function checkFirstAccessCredential(client, email, password) {
@@ -4644,21 +4791,16 @@
     }
 
     async function initCloudAuth() {
+      clearPersistedSupabaseSession();
       const client = await ensureSupabase();
       if (!client) {
         showAuthShell(false);
         return;
       }
-      const { data } = await client.auth.getSession();
-      if (data?.session?.user) {
-        showAuthShell(true);
-        await loadCloudStateForUser(data.session.user);
-      } else {
-        showAuthShell(true);
-        toggleAdminUi(false);
-        setSyncStatus('Entre para salvar seus dados na nuvem.', 'warn');
-        switchAuthMode('login');
-      }
+      showAuthShell(true);
+      toggleAdminUi(false);
+      setSyncStatus('Entre para salvar seus dados na nuvem.', 'warn', 'O login automático foi desativado neste aparelho.');
+      switchAuthMode('login');
 
       client.auth.onAuthStateChange(async (event, session) => {
         if (isChangingPassword && event === 'USER_UPDATED') return;
