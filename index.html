@@ -674,6 +674,15 @@
     .admin-validity-row { margin-bottom: 12px; }
     .admin-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .admin-delete-reason { min-height: 118px; resize: vertical; line-height: 1.45; }
+    .admin-audit-list { display: grid; gap: 8px; }
+    .admin-audit-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 11px 12px; border-radius: 12px; background: rgba(13, 31, 45, 0.74); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .admin-audit-dot { width: 10px; height: 10px; margin-top: 5px; border-radius: 999px; background: #00b4a0; box-shadow: 0 0 0 4px rgba(0, 180, 160, 0.08); }
+    .admin-audit-dot.warn { background: #ffb300; box-shadow: 0 0 0 4px rgba(255, 179, 0, 0.08); }
+    .admin-audit-dot.danger { background: #ff5252; box-shadow: 0 0 0 4px rgba(255, 82, 82, 0.08); }
+    .admin-audit-title { color: #ffffff; font-size: 13px; font-weight: 800; overflow-wrap: anywhere; }
+    .admin-audit-meta { margin-top: 3px; color: #86a8b7; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+    .admin-audit-detail { margin-top: 6px; color: #cfe9ef; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+    .admin-audit-time { color: #6b8a99; font-size: 10px; font-weight: 800; text-align: right; white-space: nowrap; }
     .admin-access-meta { margin-top: 12px; display: grid; gap: 6px; color: #86a8b7; font-size: 12px; }
     .admin-access-actions { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .admin-secondary-btn { width: 100%; padding: 11px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.1); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.14); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -838,6 +847,13 @@
       }
       .admin-access-row {
         grid-template-columns: 1fr;
+      }
+      .admin-audit-item {
+        grid-template-columns: auto minmax(0, 1fr);
+      }
+      .admin-audit-time {
+        grid-column: 2;
+        text-align: left;
       }
       .admin-access-quick {
         justify-content: flex-start;
@@ -1982,6 +1998,19 @@
             <div id="admin-access-list" class="admin-list"></div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="section-header">
+            <h2 class="section-title">Histórico Administrativo</h2>
+            <div class="flex flex-col items-end gap-1">
+              <button onclick="loadAdminAuditLogs(false)" class="text-xs font-semibold text-brand hover:text-brand-light transition-colors">Atualizar Histórico</button>
+              <span id="admin-audit-status" class="text-[10px] text-[#6b8a99]">Últimas ações</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div id="admin-audit-list" class="admin-audit-list"></div>
+          </div>
+        </div>
       </div>
     </section>
     
@@ -2289,6 +2318,7 @@
     const SUPABASE_STATE_TABLE = 'user_states';
     const SUPABASE_PROFILES_TABLE = 'app_profiles';
     const SUPABASE_ALLOWED_EMAILS_TABLE = 'allowed_emails';
+    const ADMIN_AUDIT_LIMIT = 20;
     const DEFAULT_ACCESS_DAYS = 30;
     const DEFAULT_TRIAL_MINUTES = 30;
     const LOCAL_STATE_PREFIX = 'golbuy_v7';
@@ -2305,6 +2335,7 @@
     let currentAccessProfile = null;
     let currentAllowedAccess = null;
     let adminAccessRows = [];
+    let adminAuditRows = [];
     let adminAccessFilter = 'all';
     let adminAccessSearch = '';
     let expandedAdminAccessEmail = null;
@@ -6344,6 +6375,109 @@
       if (error) throw error;
     }
 
+    function getAdminAuditActionLabel(actionType = '') {
+      const labels = {
+        create_access: 'Acesso criado',
+        create_trial: 'Perfil teste gerado',
+        apply_plan: 'Plano aplicado',
+        update_validity: 'Validade ajustada',
+        toggle_status: 'Status alterado',
+        regenerate_password: 'Senha inicial gerada',
+        delete_access: 'Cadastro excluído'
+      };
+      return labels[actionType] || 'Ação administrativa';
+    }
+
+    function getAdminAuditTone(actionType = '') {
+      if (actionType === 'delete_access') return 'danger';
+      if (['toggle_status', 'regenerate_password', 'create_trial'].includes(actionType)) return 'warn';
+      return '';
+    }
+
+    function renderAdminAuditList() {
+      const container = document.getElementById('admin-audit-list');
+      if (!container) return;
+      if (!adminAuditRows.length) {
+        container.innerHTML = '<div class="admin-empty">Nenhuma ação administrativa registrada ainda.</div>';
+        return;
+      }
+
+      container.innerHTML = adminAuditRows.map(row => {
+        const actionLabel = getAdminAuditActionLabel(row.action_type);
+        const tone = getAdminAuditTone(row.action_type);
+        const createdAt = row.created_at
+          ? new Date(row.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+          : '';
+        const target = row.target_name
+          ? `${row.target_name} · ${row.target_email}`
+          : row.target_email || 'Cliente não informado';
+        return `
+          <div class="admin-audit-item">
+            <span class="admin-audit-dot ${tone}"></span>
+            <div class="min-w-0">
+              <div class="admin-audit-title">${escapeHtml(actionLabel)}</div>
+              <div class="admin-audit-meta">${escapeHtml(target)}</div>
+              ${row.details ? `<div class="admin-audit-detail">${escapeHtml(row.details)}</div>` : ''}
+            </div>
+            <div class="admin-audit-time">${escapeHtml(createdAt)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadAdminAuditLogs(silent = true) {
+      if (!currentSessionUser || !isAdminRole(currentAccessProfile?.role)) return;
+      try {
+        const client = await ensureActiveSupabase();
+        if (!client) throw new Error('Conexão com a nuvem indisponível.');
+        const { data, error } = await withTimeout(
+          client.rpc('admin_list_audit_logs', { max_rows: ADMIN_AUDIT_LIMIT }),
+          10000,
+          'Tempo limite ao carregar histórico.'
+        );
+        if (error) throw error;
+        adminAuditRows = (data || []).map(row => ({
+          id: row.id,
+          action_type: row.action_type,
+          target_email: row.target_email || '',
+          target_name: row.target_name || '',
+          details: row.details || '',
+          actor_email: row.actor_email || '',
+          created_at: row.created_at || null
+        }));
+        renderAdminAuditList();
+        safeSetText('admin-audit-status', `Atualizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
+        if (!silent) showToast('Histórico administrativo atualizado.');
+      } catch (error) {
+        console.warn('Histórico administrativo indisponível:', error);
+        adminAuditRows = [];
+        renderAdminAuditList();
+        safeSetText('admin-audit-status', 'Rode o SQL do histórico para ativar.');
+      }
+    }
+
+    async function recordAdminAudit(actionType, targetEmail, targetName = '', details = '') {
+      try {
+        const client = await ensureActiveSupabase();
+        if (!client) return false;
+        const { error } = await withTimeout(
+          client.rpc('admin_register_audit', {
+            action_type: actionType,
+            target_email: normalizeEmail(targetEmail),
+            target_name: String(targetName || '').trim(),
+            action_details: String(details || '').trim()
+          }),
+          8000,
+          'Tempo limite ao registrar histórico.'
+        );
+        if (error) throw error;
+        return true;
+      } catch (error) {
+        console.warn('Falha ao registrar histórico administrativo:', error);
+        return false;
+      }
+    }
+
     async function createManagedAccess() {
       if (!currentSessionUser || !isAdminRole(currentAccessProfile?.role)) {
         showToast('Somente administradores podem criar acessos.', 'error');
@@ -6405,6 +6539,7 @@
         document.getElementById('admin-access-role').value = 'user';
         document.getElementById('admin-access-plan').value = 'monthly';
         prefillAdminAccessForm();
+        await recordAdminAudit('create_access', email, fullName, `Plano ${getPlanLabel(planType)} com validade até ${formatAccessExpiry({ valid_until_at: validUntilAt })}.`);
         await loadAdminData(false);
         safeSetText('admin-refresh-status', `Acesso criado: ${email} | Senha: ${tempPassword}`);
         showToast('Acesso criado. Dados copiados para envio ao cliente.');
@@ -6462,6 +6597,7 @@
         }
         const input = document.getElementById('admin-trial-name');
         if (input) input.value = '';
+        await recordAdminAudit('create_trial', row.email, clientName, `Perfil teste válido até ${formatAccessExpiry({ valid_until_at: row.valid_until_at })}.`);
         await loadAdminData(false);
         showToast('Perfil teste gerado com validade de 30 minutos.');
       } catch (error) {
@@ -6522,6 +6658,7 @@
         }));
         renderAdminOverview();
         renderAdminAccessList();
+        await loadAdminAuditLogs(true);
         safeSetText('admin-refresh-status', `Atualizado ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
         if (!silent) showToast('Painel administrativo atualizado.');
       } catch (error) {
@@ -6751,6 +6888,7 @@
         );
         if (error) throw error;
         await setAuthBanForManagedAccess(client, email, false);
+        await recordAdminAudit('apply_plan', email, '', `Plano ${getPlanLabel(planType)} aplicado manualmente.`);
         await loadAdminData(true);
         showToast(`Plano ${getPlanLabel(planType)} aplicado com sucesso.`);
       } catch (error) {
@@ -6786,6 +6924,7 @@
           updated_at: new Date().toISOString()
         }).eq('email', normalizeEmail(email)), 15000, 'Tempo limite ao atualizar perfil.');
         await setAuthBanForManagedAccess(client, email, false);
+        await recordAdminAudit('update_validity', email, current?.full_name || '', `Validade renovada até ${formatAccessExpiry({ valid_until_at: validUntilAt })}.`);
         await loadAdminData(true);
         showToast('Validade renovada com sucesso!');
       } catch (error) {
@@ -6825,6 +6964,7 @@
           updated_at: updatedAt
         }).eq('email', normalizeEmail(email)), 15000, 'Tempo limite ao atualizar perfil.');
         await setAuthBanForManagedAccess(client, email, status === 'blocked' || new Date(validUntilAt).getTime() <= Date.now());
+        await recordAdminAudit('update_validity', email, current.full_name || '', `Validade ajustada para ${formatAccessExpiry({ valid_until_at: validUntilAt })}.`);
         await loadAdminData(true);
         showToast('Validade atualizada com sucesso.');
       } catch (error) {
@@ -6857,6 +6997,7 @@
           updated_at: new Date().toISOString()
         }).eq('email', normalizeEmail(email)), 15000, 'Tempo limite ao atualizar perfil.');
         await setAuthBanForManagedAccess(client, email, nextStatus === 'blocked');
+        await recordAdminAudit('toggle_status', email, current.full_name || '', nextStatus === 'blocked' ? 'Cadastro bloqueado pelo administrador.' : 'Cadastro reativado pelo administrador.');
         await loadAdminData(true);
         showToast(nextStatus === 'blocked' ? 'Conta bloqueada.' : 'Conta reativada.');
       } catch (error) {
@@ -6884,6 +7025,7 @@
           must_change_password: true,
           updated_at: new Date().toISOString()
         }).eq('email', normalizeEmail(email));
+        await recordAdminAudit('regenerate_password', email, current?.full_name || '', 'Nova senha inicial temporária gerada.');
         await loadAdminData(true);
         safeSetText('admin-refresh-status', `Nova senha de ${email}: ${newPassword}`);
         navigator.clipboard?.writeText(newPassword).catch(() => {});
@@ -6913,6 +7055,7 @@
           return;
         }
         await deleteManagedAuthAccount(client, email, reason);
+        await recordAdminAudit('delete_access', email, current?.full_name || '', `Motivo: ${reason}`);
         closeAdminDeleteAccessModal();
         await loadAdminData(true);
         showToast('Cadastro excluído e motivo salvo para o cliente.');
