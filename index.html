@@ -546,6 +546,33 @@
     .section-tab-btn.active { background: rgba(0, 180, 160, 0.16); color: #7fe6d7; border-color: rgba(0, 180, 160, 0.24); }
     .section-tab-btn:active { transform: scale(0.98); }
     .section-tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: rgba(0, 180, 160, 0.12); color: #d8fff8; font-size: 11px; line-height: 1; }
+    .calendar-toolbar { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 12px; padding: 16px 16px 10px; }
+    .calendar-nav-btn { width: 42px; height: 42px; border-radius: 14px; background: #0d1f2d; color: #86a8b7; display: inline-flex; align-items: center; justify-content: center; transition: all .2s ease; }
+    .calendar-nav-btn:hover { color: #00b4a0; background: #132a3c; }
+    .calendar-title-wrap { min-width: 0; text-align: center; }
+    .calendar-title-eyebrow { display: block; margin-bottom: 2px; color: #6b8a99; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .calendar-month-title { color: #fff; font-size: 18px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
+    .calendar-actions { display: flex; justify-content: center; padding: 0 16px 12px; }
+    .calendar-today-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 14px; border-radius: 999px; background: rgba(0, 180, 160, 0.12); color: #7fe6d7; border: 1px solid rgba(0, 180, 160, 0.18); font-size: 12px; font-weight: 800; }
+    .calendar-legend { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 16px 12px; color: #86a8b7; font-size: 11px; }
+    .calendar-legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .calendar-dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; }
+    .calendar-day { min-height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #e8f4f8; font-size: 13px; font-weight: 700; position: relative; cursor: pointer; transition: all .2s ease; background: rgba(13, 31, 45, 0.28); border: 1px solid transparent; }
+    .calendar-day:hover { background: rgba(19, 42, 60, 0.92); border-color: rgba(0, 180, 160, 0.12); }
+    .calendar-day.muted { color: #3d5a6a; background: transparent; cursor: default; }
+    .calendar-day.today { color: #7fe6d7; background: rgba(0, 180, 160, 0.12); border-color: rgba(0, 180, 160, 0.18); }
+    .calendar-day.selected { color: #fff; background: rgba(0, 180, 160, 0.92); box-shadow: 0 10px 22px rgba(0, 180, 160, 0.18); }
+    .calendar-day-dots { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 3px; }
+    .calendar-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px; border-bottom: 1px solid rgba(0, 180, 160, 0.06); }
+    .calendar-summary-card { padding: 12px; border-radius: 14px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
+    .calendar-summary-label { color: #6b8a99; font-size: 11px; font-weight: 700; }
+    .calendar-summary-value { display: block; margin-top: 5px; color: #fff; font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+    .calendar-next-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 14px 4px; padding: 12px 14px; border-radius: 14px; background: rgba(0, 180, 160, 0.08); border: 1px solid rgba(0, 180, 160, 0.12); }
+    .calendar-next-label { color: #7fe6d7; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .calendar-next-title { margin-top: 3px; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .calendar-next-detail { margin-top: 3px; color: #86a8b7; font-size: 11px; line-height: 1.35; }
+    .calendar-next-amount { flex-shrink: 0; color: #fff; font-size: 13px; font-weight: 800; text-align: right; }
+    @media (min-width: 720px) { .calendar-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     .data-health-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .data-health-item { padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
     .data-health-label { color: #6b8a99; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -1296,20 +1323,10 @@
         </div>
       </div>
 
-      <div class="space-y-3 mt-3">
-        <div class="relative">
-          <div class="dropdown w-full text-left" onclick="toggleDropdown('filter-type')">
-            <span id="filter-type-label">Todas</span>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </div>
-          <div id="dropdown-filter-type" class="hidden filter-popover menu full">
-            <div class="py-1">
-              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'all', 'Todas')">Todas</button>
-              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'income', 'Receitas')">Receitas</button>
-              <button class="w-full px-4 py-2.5 text-left text-sm hover:bg-brand/10" onclick="setFilter('type', 'expense', 'Despesas')">Despesas</button>
-            </div>
-          </div>
-        </div>
+      <div class="section-tabs mt-4" aria-label="Filtro de transações">
+        <button type="button" class="section-tab-btn active" data-tx-type-tab="all" onclick="setFilter('type', 'all', 'Todas')">Todas<span class="section-tab-count" id="tx-all-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-tx-type-tab="income" onclick="setFilter('type', 'income', 'Receitas')">Receitas<span class="section-tab-count" id="tx-income-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-tx-type-tab="expense" onclick="setFilter('type', 'expense', 'Despesas')">Despesas<span class="section-tab-count" id="tx-expense-tab-count">0</span></button>
       </div>
       
       <div class="card mt-4 mb-4">
@@ -1342,14 +1359,24 @@
       </div>
 
       <div class="card mt-4">
-        <div class="flex items-center justify-between gap-3 p-4">
-          <button class="w-10 h-10 rounded-xl bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-brand transition-colors" onclick="calPrev()">
+        <div class="calendar-toolbar">
+          <button class="calendar-nav-btn" onclick="calPrev()" aria-label="Mês anterior">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <h2 class="font-display text-lg font-semibold text-white text-center leading-tight px-2" id="cal-month-year">Janeiro 2024</h2>
-          <button class="w-10 h-10 rounded-xl bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-brand transition-colors" onclick="calNext()">
+          <div class="calendar-title-wrap">
+            <span class="calendar-title-eyebrow">Visualizando</span>
+            <h2 class="font-display calendar-month-title" id="cal-month-year">Janeiro 2024</h2>
+          </div>
+          <button class="calendar-nav-btn" onclick="calNext()" aria-label="Próximo mês">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </button>
+        </div>
+        <div class="calendar-actions">
+          <button type="button" class="calendar-today-btn" onclick="calToday()">Hoje</button>
+        </div>
+        <div class="calendar-legend">
+          <span class="calendar-legend-item"><span class="calendar-dot bg-income"></span>Receita</span>
+          <span class="calendar-legend-item"><span class="calendar-dot bg-expense"></span>Despesa</span>
         </div>
         <div class="grid grid-cols-7 gap-1 px-4 pb-2">
           <span class="text-center text-xs font-medium text-[#6b8a99] py-2">Dom</span>
@@ -1369,12 +1396,21 @@
         <h2 class="section-title" id="cal-detail-title">Resumo do Mês</h2>
           <button id="cal-clear-filter" class="hidden text-xs text-brand" onclick="clearCalendarFilter()">Ver mês todo</button>
         </div>
-        <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-brand/5">
-          <div class="text-center"><div class="text-xs text-[#6b8a99] mb-1">Receitas</div><div class="text-sm font-semibold text-income" id="cal-income">R$ 0,00</div></div>
-          <div class="text-center"><div class="text-xs text-[#6b8a99] mb-1">Despesas</div><div class="text-sm font-semibold text-expense" id="cal-expense">R$ 0,00</div></div>
-          <div class="text-center"><div class="text-xs text-[#6b8a99] mb-1">Saldo</div><div class="text-sm font-semibold text-brand" id="cal-balance">R$ 0,00</div></div>
+        <div class="calendar-summary-grid">
+          <div class="calendar-summary-card"><div class="calendar-summary-label">Receitas</div><span class="calendar-summary-value text-income" id="cal-income">R$ 0,00</span></div>
+          <div class="calendar-summary-card"><div class="calendar-summary-label">Despesas</div><span class="calendar-summary-value text-expense" id="cal-expense">R$ 0,00</span></div>
+          <div class="calendar-summary-card"><div class="calendar-summary-label">Saldo</div><span class="calendar-summary-value text-brand" id="cal-balance">R$ 0,00</span></div>
+          <div class="calendar-summary-card"><div class="calendar-summary-label">A pagar</div><span class="calendar-summary-value text-warning" id="cal-pending">R$ 0,00</span></div>
         </div>
-        <div id="cal-day-list" class="p-2 max-h-60 overflow-y-auto hidden">
+        <div class="calendar-next-card">
+          <div class="min-w-0">
+            <div class="calendar-next-label">Próximo lançamento</div>
+            <div class="calendar-next-title" id="cal-next-title">Sem lançamentos</div>
+            <div class="calendar-next-detail" id="cal-next-detail">Nenhuma movimentação neste mês.</div>
+          </div>
+          <div class="calendar-next-amount" id="cal-next-amount">R$ 0,00</div>
+        </div>
+        <div id="cal-day-list" class="p-2 max-h-72 overflow-y-auto">
             <!-- Lista de transações do dia clicado -->
         </div>
       </div>
@@ -4605,9 +4641,23 @@
 
     function setFilter(type, value, label) {
       currentFilter[type] = value;
-      document.getElementById('filter-' + type + '-label').textContent = label;
+      const labelEl = document.getElementById('filter-' + type + '-label');
+      if (labelEl) labelEl.textContent = label;
       closeAllDropdowns();
       renderTransactions();
+    }
+
+    function updateTransactionTypeTabs(monthTransactions = []) {
+      const validTypes = ['all', 'income', 'expense'];
+      if (!validTypes.includes(currentFilter.type)) currentFilter.type = 'all';
+
+      document.querySelectorAll('[data-tx-type-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.txTypeTab === currentFilter.type);
+      });
+
+      safeSetText('tx-all-tab-count', String(monthTransactions.length));
+      safeSetText('tx-income-tab-count', String(monthTransactions.filter(t => t.type === 'income').length));
+      safeSetText('tx-expense-tab-count', String(monthTransactions.filter(t => t.type === 'expense').length));
     }
 
     function filterControl(filter) {
@@ -5169,13 +5219,11 @@
       
       // Filtro por mês customizado (não pelo filtro rápido currentFilter.period)
       visible = filterByDateRange(visible, State.txCustomDate, 'month');
+      updateTransactionTypeTabs(visible);
 
       // Filtro por tipo
-      if(currentFilter.type !== 'all' && currentFilter.type !== 'month') { 
-        // Se currentFilter.type for 'month' aqui significa bug de estado, assumimos 'all' ou tipo
-        if(currentFilter.type !== 'all') {
-             visible = visible.filter(t => t.type === currentFilter.type);
-        }
+      if(currentFilter.type !== 'all') {
+        visible = visible.filter(t => t.type === currentFilter.type);
       }
       
       visible = sortTransactionsByDateDesc(visible);
@@ -5378,6 +5426,14 @@
       }
     }
 
+    function sortTransactionsByDateAsc(transactions) {
+      return [...transactions].sort((a, b) => {
+        const dateDiff = (parseLocalDate(a.date)?.getTime() || 0) - (parseLocalDate(b.date)?.getTime() || 0);
+        if (dateDiff !== 0) return dateDiff;
+        return String(a.id).localeCompare(String(b.id), 'pt-BR', { numeric: true });
+      });
+    }
+
     function renderCalendar() {
       const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       document.getElementById('cal-month-year').textContent = `${monthNames[calDate.getMonth()]} ${calDate.getFullYear()}`;
@@ -5391,7 +5447,7 @@
       
       const prevMonth = new Date(calDate.getFullYear(), calDate.getMonth(), 0);
       for(let i = startPadding - 1; i >= 0; i--) {
-        html += `<div class="text-center py-2 text-[#3d5a6a] text-sm">${prevMonth.getDate() - i}</div>`;
+        html += `<div class="calendar-day muted">${prevMonth.getDate() - i}</div>`;
       }
       
       // Usa filterByDateRange para pegar transações do mês visualizado
@@ -5408,19 +5464,18 @@
         const selectedCalendarDate = parseLocalDate(State.calendarSelectedDate);
         const isSelected = selectedCalendarDate && selectedCalendarDate.toDateString() === new Date(calDate.getFullYear(), calDate.getMonth(), d).toDateString();
         
-        let dayClass = 'text-center py-2 rounded-lg cursor-pointer transition-all text-sm relative';
-        if(isSelected) dayClass += ' bg-brand text-white font-bold shadow-lg shadow-brand/20';
-        else if(isToday) dayClass += ' bg-brand/20 text-brand font-semibold';
-        else dayClass += ' text-[#e8f4f8] hover:bg-[#132a3c]';
+        let dayClass = 'calendar-day';
+        if(isSelected) dayClass += ' selected';
+        else if(isToday) dayClass += ' today';
         
         html += `
-          <div class="${dayClass}" onclick="selectCalendarDay('${dateStr}')">
-            ${d}
-            ${hasTx ? `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-              ${dayIncome > 0 ? '<span class="w-1.5 h-1.5 rounded-full bg-income"></span>' : ''}
-              ${dayExpense > 0 ? '<span class="w-1.5 h-1.5 rounded-full bg-expense"></span>' : ''}
+          <button type="button" class="${dayClass}" onclick="selectCalendarDay('${dateStr}')" aria-label="Ver lançamentos de ${String(d).padStart(2, '0')}/${String(calDate.getMonth() + 1).padStart(2, '0')}/${calDate.getFullYear()}">
+            <span>${d}</span>
+            ${hasTx ? `<div class="calendar-day-dots">
+              ${dayIncome > 0 ? '<span class="calendar-dot bg-income"></span>' : ''}
+              ${dayExpense > 0 ? '<span class="calendar-dot bg-expense"></span>' : ''}
             </div>` : ''}
-          </div>
+          </button>
         `;
       }
       
@@ -5443,16 +5498,23 @@
       renderCalendar();
     }
 
+    function calToday() {
+      const today = new Date();
+      calDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      State.calendarSelectedDate = toDateInputValue(today);
+      renderCalendar();
+    }
+
     function updateCalendarSummary(monthTx) {
       const listEl = document.getElementById('cal-day-list');
       const titleEl = document.getElementById('cal-detail-title');
       const clearBtn = document.getElementById('cal-clear-filter');
       
-      let displayTx = monthTx;
+      let displayTx = sortTransactionsByDateAsc(monthTx);
       
       if(State.calendarSelectedDate) {
         // Filtra pelo dia específico
-        displayTx = monthTx.filter(t => t.date === State.calendarSelectedDate);
+        displayTx = sortTransactionsByDateAsc(monthTx.filter(t => t.date === State.calendarSelectedDate));
         const dateObj = new Date(State.calendarSelectedDate + 'T00:00:00');
         titleEl.textContent = `Dia ${dateObj.getDate()} de ${dateObj.toLocaleDateString('pt-BR', { month: 'long' })}`;
         clearBtn.classList.remove('hidden');
@@ -5461,45 +5523,82 @@
         // Resumo do mês
         titleEl.textContent = "Resumo do Mês";
         clearBtn.classList.add('hidden');
-        listEl.classList.add('hidden');
+        listEl.classList.remove('hidden');
       }
 
       const income = displayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
       const expense = displayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const pendingExpense = displayTx.filter(t => t.type === 'expense' && t.status === 'pending').reduce((s, t) => s + t.amount, 0);
       
       document.getElementById('cal-income').textContent = formatMoney(income);
       document.getElementById('cal-expense').textContent = formatMoney(expense);
       document.getElementById('cal-balance').textContent = formatMoney(income - expense);
+      document.getElementById('cal-pending').textContent = formatMoney(pendingExpense);
 
-      if(State.calendarSelectedDate && displayTx.length > 0) {
+      const todayKey = toDateInputValue(new Date());
+      const monthSorted = sortTransactionsByDateAsc(monthTx);
+      const nextTx = monthSorted.find(t => t.type === 'expense' && t.status === 'pending' && t.date >= todayKey)
+        || monthSorted.find(t => t.status === 'pending' && t.date >= todayKey)
+        || monthSorted.find(t => t.date >= todayKey)
+        || monthSorted[0];
+      const nextTitleEl = document.getElementById('cal-next-title');
+      const nextDetailEl = document.getElementById('cal-next-detail');
+      const nextAmountEl = document.getElementById('cal-next-amount');
+
+      if (nextTx) {
+        const cat = getCategory(nextTx.category);
+        const account = getAccount(nextTx.accountId);
+        nextTitleEl.textContent = nextTx.description || 'Lançamento';
+        nextDetailEl.textContent = `${formatDate(nextTx.date)} - ${cat.name} - ${account.name}`;
+        nextAmountEl.textContent = `${nextTx.type === 'income' ? '+' : '-'}${formatMoney(nextTx.amount)}`;
+        nextAmountEl.className = `calendar-next-amount ${nextTx.type === 'income' ? 'text-income' : 'text-expense'}`;
+      } else {
+        nextTitleEl.textContent = 'Sem lançamentos';
+        nextDetailEl.textContent = 'Nenhuma movimentação neste mês.';
+        nextAmountEl.textContent = formatMoney(0);
+        nextAmountEl.className = 'calendar-next-amount';
+      }
+
+      if(displayTx.length > 0) {
         listEl.innerHTML = displayTx.map(t => {
           const cat = getCategory(t.category);
+          const account = getAccount(t.accountId);
+          const isPending = t.status === 'pending';
+          const statusText = t.type === 'income'
+            ? (isPending ? 'A receber' : 'Recebido')
+            : (isPending ? 'A pagar' : 'Pago');
           return `
-            <div class="tx-item">
+            <div class="tx-item" onclick="editTransaction('${t.id}')">
                <div class="tx-icon ${t.type === 'income' ? 'bg-income/15' : 'bg-expense/15'}">
-                <svg class="w-4 h-4 ${t.type === 'income' ? 'text-income' : 'text-expense'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <svg class="w-4 h-4 ${t.type === 'income' ? 'text-income' : 'text-expense'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  ${t.type === 'income'
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/>'
+                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/>'}
+                </svg>
               </div>
               <div class="tx-content">
                 <p class="tx-title text-xs">${escapeHtml(t.description)}</p>
-                <p class="tx-sub text-[10px]">${cat.name}</p>
+                <p class="tx-sub text-[10px]">${formatDate(t.date)} - ${escapeHtml(cat.name)} - ${escapeHtml(account.name)} - ${statusText}</p>
               </div>
-              <span class="text-xs font-semibold ${t.type === 'income' ? 'text-income' : 'text-expense'}">${formatMoney(t.amount)}</span>
+              <span class="text-xs font-semibold ${t.type === 'income' ? 'text-income' : 'text-expense'}">${t.type === 'income' ? '+' : '-'}${formatMoney(t.amount)}</span>
             </div>
           `;
         }).join('');
-      } else if (State.calendarSelectedDate && displayTx.length === 0) {
+      } else if (State.calendarSelectedDate) {
         listEl.innerHTML = '<p class="text-center text-xs text-[#6b8a99] py-4">Sem transações neste dia.</p>';
+      } else {
+        listEl.innerHTML = '<p class="text-center text-xs text-[#6b8a99] py-4">Sem lançamentos neste mês.</p>';
       }
     }
 
     function calPrev() {
-      calDate.setMonth(calDate.getMonth() - 1);
+      calDate = new Date(calDate.getFullYear(), calDate.getMonth() - 1, 1);
       State.calendarSelectedDate = null; // Reset selection ao mudar de mês
       renderCalendar();
     }
 
     function calNext() {
-      calDate.setMonth(calDate.getMonth() + 1);
+      calDate = new Date(calDate.getFullYear(), calDate.getMonth() + 1, 1);
       State.calendarSelectedDate = null; // Reset selection ao mudar de mês
       renderCalendar();
     }
