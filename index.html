@@ -637,18 +637,42 @@
     .admin-inline-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .admin-password-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
     .admin-password-value { color: #e8f4f8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 700; word-break: break-all; }
-    .admin-list { display: grid; gap: 12px; }
+    .admin-list-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .admin-search-input { min-height: 42px; }
+    .admin-filter-tabs { display: flex; gap: 8px; align-items: center; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .admin-filter-tabs::-webkit-scrollbar { display: none; }
+    .admin-filter-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 8px 11px; border-radius: 999px; background: rgba(13, 31, 45, 0.82); color: #86a8b7; border: 1px solid rgba(0, 180, 160, 0.08); font-size: 12px; font-weight: 800; cursor: pointer; transition: background .2s ease, border-color .2s ease, color .2s ease; }
+    .admin-filter-btn.active { background: rgba(0, 180, 160, 0.14); color: #7fe6d7; border-color: rgba(0, 180, 160, 0.28); }
+    .admin-filter-count { min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); color: #ffffff; font-size: 10px; }
+    .admin-list { display: grid; gap: 10px; }
     .admin-access-card { padding: 14px; border-radius: 16px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .admin-access-card.compact { padding: 0; overflow: hidden; }
+    .admin-access-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 13px 14px; background: transparent; border: 0; text-align: left; cursor: pointer; }
+    .admin-access-row:hover { background: rgba(0, 180, 160, 0.04); }
+    .admin-access-main { min-width: 0; display: grid; gap: 4px; }
+    .admin-access-title-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
     .admin-access-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-    .admin-access-title { color: #ffffff; font-size: 14px; font-weight: 700; }
+    .admin-access-title { color: #ffffff; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .admin-access-title-row .admin-access-title { min-width: 0; }
     .admin-access-email { color: #86a8b7; font-size: 12px; margin-top: 4px; word-break: break-word; }
+    .admin-access-row .admin-access-email { margin-top: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: normal; }
+    .admin-access-quick { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; min-width: 0; }
     .admin-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .admin-badge { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
     .admin-badge.role { background: rgba(0, 180, 160, 0.12); color: #7fe6d7; }
+    .admin-badge.plan { background: rgba(79, 141, 255, 0.12); color: #a9c5ff; }
     .admin-badge.status-active { background: rgba(0, 200, 83, 0.12); color: #8be0a7; }
     .admin-badge.status-blocked { background: rgba(255, 82, 82, 0.12); color: #ff9b9b; }
     .admin-badge.status-expired { background: rgba(255, 179, 0, 0.12); color: #ffd36b; }
     .admin-badge.warn { background: rgba(255, 179, 0, 0.14); color: #ffd36b; }
+    .admin-manage-chip { display: inline-flex; align-items: center; justify-content: center; padding: 7px 10px; border-radius: 10px; background: rgba(0, 180, 160, 0.10); color: #7fe6d7; border: 1px solid rgba(0, 180, 160, 0.14); font-size: 11px; font-weight: 800; }
+    .admin-access-detail { padding: 14px; border-top: 1px solid rgba(0, 180, 160, 0.08); background: rgba(7, 18, 28, 0.25); }
+    .admin-mini-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .admin-mini-item { min-width: 0; padding: 10px 11px; border-radius: 12px; background: rgba(13, 31, 45, 0.74); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .admin-mini-label { color: #6b8a99; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .admin-mini-value { margin-top: 4px; color: #ffffff; font-size: 12px; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+    .admin-validity-row { margin-bottom: 12px; }
+    .admin-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .admin-access-meta { margin-top: 12px; display: grid; gap: 6px; color: #86a8b7; font-size: 12px; }
     .admin-access-actions { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .admin-secondary-btn { width: 100%; padding: 11px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.1); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.14); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -805,8 +829,17 @@
       .admin-grid,
       .admin-price-grid,
       .admin-form-grid,
-      .admin-access-actions {
+      .admin-access-actions,
+      .admin-list-toolbar,
+      .admin-action-grid,
+      .admin-mini-meta {
         grid-template-columns: 1fr;
+      }
+      .admin-access-row {
+        grid-template-columns: 1fr;
+      }
+      .admin-access-quick {
+        justify-content: flex-start;
       }
       .button-row {
         flex-direction: column;
@@ -1930,6 +1963,21 @@
             </div>
           </div>
           <div class="p-4">
+            <div class="admin-list-toolbar">
+              <input
+                type="search"
+                id="admin-access-search"
+                class="input-styled admin-search-input"
+                placeholder="Buscar por nome ou e-mail"
+                oninput="setAdminAccessSearch(this.value)"
+              >
+              <div class="admin-filter-tabs" aria-label="Filtros de acessos">
+                <button type="button" class="admin-filter-btn active" data-admin-filter="all" onclick="setAdminAccessFilter('all')">Todos <span id="admin-filter-all-count" class="admin-filter-count">0</span></button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="active" onclick="setAdminAccessFilter('active')">Ativos <span id="admin-filter-active-count" class="admin-filter-count">0</span></button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="blocked" onclick="setAdminAccessFilter('blocked')">Bloqueados <span id="admin-filter-blocked-count" class="admin-filter-count">0</span></button>
+                <button type="button" class="admin-filter-btn" data-admin-filter="expired" onclick="setAdminAccessFilter('expired')">Expirados <span id="admin-filter-expired-count" class="admin-filter-count">0</span></button>
+              </div>
+            </div>
             <div id="admin-access-list" class="admin-list"></div>
           </div>
         </div>
@@ -2232,6 +2280,9 @@
     let currentAccessProfile = null;
     let currentAllowedAccess = null;
     let adminAccessRows = [];
+    let adminAccessFilter = 'all';
+    let adminAccessSearch = '';
+    let expandedAdminAccessEmail = null;
     let lastTrialCredentials = null;
     let passwordChangeRequired = false;
     let isChangingPassword = false;
@@ -6386,62 +6437,181 @@
       safeSetText('admin-stat-claimed', String(claimed));
     }
 
+    function getAdminAccessStatusLabel(row) {
+      if (row?.effectiveStatus === 'active') return 'Ativo';
+      if (row?.effectiveStatus === 'blocked') return 'Bloqueado';
+      if (row?.effectiveStatus === 'expired') return 'Expirado';
+      return 'Pendente';
+    }
+
+    function updateAdminAccessFilterUi(rows = adminAccessRows) {
+      const counts = rows.reduce((acc, row) => {
+        const status = row.effectiveStatus || getAccessStatus(row);
+        acc.all += 1;
+        if (Object.prototype.hasOwnProperty.call(acc, status)) acc[status] += 1;
+        return acc;
+      }, { all: 0, active: 0, blocked: 0, expired: 0 });
+
+      safeSetText('admin-filter-all-count', String(counts.all));
+      safeSetText('admin-filter-active-count', String(counts.active));
+      safeSetText('admin-filter-blocked-count', String(counts.blocked));
+      safeSetText('admin-filter-expired-count', String(counts.expired));
+
+      document.querySelectorAll('[data-admin-filter]').forEach(button => {
+        button.classList.toggle('active', button.dataset.adminFilter === adminAccessFilter);
+      });
+    }
+
+    function setAdminAccessFilter(filter = 'all') {
+      adminAccessFilter = ['all', 'active', 'blocked', 'expired'].includes(filter) ? filter : 'all';
+      renderAdminAccessList();
+    }
+
+    function normalizeAdminAccessSearch(value = '') {
+      return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    }
+
+    function setAdminAccessSearch(value = '') {
+      adminAccessSearch = normalizeAdminAccessSearch(value);
+      renderAdminAccessList();
+    }
+
+    function toggleAdminAccessDetails(email) {
+      const normalized = normalizeEmail(email);
+      expandedAdminAccessEmail = expandedAdminAccessEmail === normalized ? null : normalized;
+      renderAdminAccessList();
+    }
+
+    function getAdminAccessSearchText(row) {
+      return [
+        row.full_name,
+        row.profile?.full_name,
+        row.email,
+        getPlanLabel(row.plan_type),
+        getAdminAccessStatusLabel(row),
+        row.role === 'admin' ? 'Administrador' : 'Usuário',
+        row.purchase_platform
+      ].filter(Boolean).join(' ');
+      return normalizeAdminAccessSearch(text);
+    }
+
     function renderAdminAccessList() {
       const container = document.getElementById('admin-access-list');
       if (!container) return;
-      if (!adminAccessRows.length) {
+      const rows = adminAccessRows || [];
+      updateAdminAccessFilterUi(rows);
+
+      if (expandedAdminAccessEmail && !rows.some(row => normalizeEmail(row.email) === expandedAdminAccessEmail)) {
+        expandedAdminAccessEmail = null;
+      }
+
+      if (!rows.length) {
         container.innerHTML = '<div class="admin-empty">Nenhum e-mail autorizado ainda.</div>';
         return;
       }
 
-      container.innerHTML = adminAccessRows.map(row => {
+      const statusRank = { active: 0, expired: 1, blocked: 2 };
+      const visibleRows = rows
+        .filter(row => {
+          const status = row.effectiveStatus || getAccessStatus(row);
+          if (adminAccessFilter !== 'all' && status !== adminAccessFilter) return false;
+          if (!adminAccessSearch) return true;
+          return getAdminAccessSearchText(row).includes(adminAccessSearch);
+        })
+        .sort((a, b) => {
+          const statusDiff = (statusRank[a.effectiveStatus] ?? 9) - (statusRank[b.effectiveStatus] ?? 9);
+          if (statusDiff) return statusDiff;
+          return String(a.full_name || a.email || '').localeCompare(String(b.full_name || b.email || ''), 'pt-BR', { sensitivity: 'base' });
+        });
+
+      if (!visibleRows.length) {
+        container.innerHTML = '<div class="admin-empty">Nenhum acesso encontrado com este filtro.</div>';
+        return;
+      }
+
+      container.innerHTML = visibleRows.map(row => {
+        const emailKey = normalizeEmail(row.email);
+        const expanded = expandedAdminAccessEmail === emailKey;
         const validityInputId = getAccessValidityInputId(row.email);
         const statusClass = row.effectiveStatus === 'active'
           ? 'status-active'
           : row.effectiveStatus === 'blocked'
             ? 'status-blocked'
             : 'status-expired';
+        const statusLabel = getAdminAccessStatusLabel(row);
         const validityText = formatAccessExpiry(row);
         const lastAccess = row.profile?.last_login_at
           ? new Date(row.profile.last_login_at).toLocaleString('pt-BR')
           : 'Ainda não acessou';
-        const tempPasswordInfo = row.must_change_password
-          ? '<div>Senha temporária: <strong>gerada, copie no momento da criação</strong></div>'
-          : '<div>Senha temporária: não pendente.</div>';
+        const tempPasswordText = row.must_change_password ? 'Temporária pendente' : 'Sem pendência';
+        const planLabel = getPlanLabel(row.plan_type);
+        const roleLabel = row.role === 'admin' ? 'Administrador' : 'Usuário';
+        const displayName = row.full_name || row.profile?.full_name || 'Sem nome definido';
+        const platformText = row.purchase_platform ? `Via ${row.purchase_platform}` : 'Cadastro manual';
 
         return `
-          <div class="admin-access-card">
-            <div class="admin-access-head">
-              <div class="min-w-0">
-                <div class="admin-access-title">${escapeHtml(row.full_name || 'Sem nome definido')}</div>
+          <div class="admin-access-card compact">
+            <button type="button" class="admin-access-row" onclick="toggleAdminAccessDetails('${escapeJsString(row.email)}')" aria-expanded="${expanded ? 'true' : 'false'}" aria-label="Gerenciar acesso de ${escapeHtml(displayName)}">
+              <div class="admin-access-main">
+                <div class="admin-access-title-row">
+                  <div class="admin-access-title">${escapeHtml(displayName)}</div>
+                  ${row.is_trial ? '<span class="admin-badge warn">Teste</span>' : ''}
+                </div>
                 <div class="admin-access-email">${escapeHtml(row.email)}</div>
               </div>
-            </div>
-            <div class="admin-badges">
-              <span class="admin-badge role">${row.role === 'admin' ? 'Administrador' : 'Usuário'}</span>
-              <span class="admin-badge">${getPlanLabel(row.plan_type)}</span>
-              <span class="admin-badge ${statusClass}">${row.effectiveStatus === 'active' ? 'Ativo' : row.effectiveStatus === 'blocked' ? 'Bloqueado' : 'Expirado'}</span>
-              ${row.is_trial ? '<span class="admin-badge warn">Teste 30 min</span>' : ''}
-            </div>
-            <div class="admin-access-meta">
-              <div>Validade: <strong>${validityText}</strong></div>
-              <div>Plano: <strong>${getPlanLabel(row.plan_type)}</strong>${row.purchase_platform ? ` via ${escapeHtml(row.purchase_platform)}` : ''}</div>
-              <div>Último acesso: <strong>${lastAccess}</strong></div>
-              <div>${tempPasswordInfo}</div>
-              <div class="space-y-2">
-                <label class="text-xs text-[#6b8a99] font-medium block">Ajustar validade</label>
-                <input type="datetime-local" id="${validityInputId}" class="input-styled" value="${toDateTimeLocalValue(getAccessExpiryDate(row) || '')}">
+              <div class="admin-access-quick">
+                <span class="admin-badge ${statusClass}">${statusLabel}</span>
+                <span class="admin-badge plan">${escapeHtml(planLabel)}</span>
+                <span class="admin-manage-chip">${expanded ? 'Fechar' : 'Gerenciar'}</span>
               </div>
-            </div>
-            <div class="admin-access-actions">
-              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'monthly')">Mensal</button>
-              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'semiannual')">Semestral</button>
-              <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'annual')">Anual</button>
-              <button class="admin-secondary-btn" onclick="updateManagedAccessValidity('${escapeJsString(row.email)}')">Salvar validade</button>
-              <button class="admin-secondary-btn warn" onclick="toggleManagedAccessStatus('${escapeJsString(row.email)}')">${row.effectiveStatus === 'blocked' ? 'Reativar' : 'Bloquear'}</button>
-              <button class="admin-secondary-btn" onclick="regenerateManagedPassword('${escapeJsString(row.email)}')">Gerar senha inicial</button>
-              <button class="admin-secondary-btn danger" onclick="deleteManagedAccess('${escapeJsString(row.email)}')">Excluir acesso</button>
-            </div>
+            </button>
+            ${expanded ? `
+              <div class="admin-access-detail">
+                <div class="admin-mini-meta">
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Tipo</div>
+                    <div class="admin-mini-value">${escapeHtml(roleLabel)}</div>
+                  </div>
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Validade</div>
+                    <div class="admin-mini-value">${escapeHtml(validityText)}</div>
+                  </div>
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Último acesso</div>
+                    <div class="admin-mini-value">${escapeHtml(lastAccess)}</div>
+                  </div>
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Senha inicial</div>
+                    <div class="admin-mini-value">${escapeHtml(tempPasswordText)}</div>
+                  </div>
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Plano</div>
+                    <div class="admin-mini-value">${escapeHtml(planLabel)}</div>
+                  </div>
+                  <div class="admin-mini-item">
+                    <div class="admin-mini-label">Origem</div>
+                    <div class="admin-mini-value">${escapeHtml(platformText)}</div>
+                  </div>
+                </div>
+                <div class="admin-validity-row space-y-2">
+                  <label class="text-xs text-[#6b8a99] font-medium block">Ajustar validade</label>
+                  <input type="datetime-local" id="${validityInputId}" class="input-styled" value="${toDateTimeLocalValue(getAccessExpiryDate(row) || '')}">
+                </div>
+                <div class="admin-action-grid">
+                  <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'monthly')">Mensal</button>
+                  <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'semiannual')">Semestral</button>
+                  <button class="admin-secondary-btn" onclick="applyManagedAccessPlan('${escapeJsString(row.email)}', 'annual')">Anual</button>
+                  <button class="admin-secondary-btn" onclick="updateManagedAccessValidity('${escapeJsString(row.email)}')">Salvar validade</button>
+                  <button class="admin-secondary-btn warn" onclick="toggleManagedAccessStatus('${escapeJsString(row.email)}')">${row.effectiveStatus === 'blocked' ? 'Reativar' : 'Bloquear'}</button>
+                  <button class="admin-secondary-btn" onclick="regenerateManagedPassword('${escapeJsString(row.email)}')">Gerar senha inicial</button>
+                  <button class="admin-secondary-btn danger" onclick="deleteManagedAccess('${escapeJsString(row.email)}')">Excluir acesso</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('');
