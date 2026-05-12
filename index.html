@@ -673,6 +673,7 @@
     .admin-mini-value { margin-top: 4px; color: #ffffff; font-size: 12px; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
     .admin-validity-row { margin-bottom: 12px; }
     .admin-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .admin-delete-reason { min-height: 118px; resize: vertical; line-height: 1.45; }
     .admin-access-meta { margin-top: 12px; display: grid; gap: 6px; color: #86a8b7; font-size: 12px; }
     .admin-access-actions { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .admin-secondary-btn { width: 100%; padding: 11px 12px; border-radius: 12px; background: rgba(0, 180, 160, 0.1); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.14); font-size: 12px; font-weight: 700; cursor: pointer; }
@@ -2164,6 +2165,30 @@
     </div>
   </div>
 
+  <div id="modal-admin-delete-access" class="modal-overlay" onclick="if(event.target === this) closeAdminDeleteAccessModal()">
+    <div class="modal-content">
+      <div class="modal-title-row">
+        <h2 class="font-display text-lg font-bold text-white">Excluir Cadastro</h2>
+        <button onclick="closeAdminDeleteAccessModal()" class="w-8 h-8 rounded-lg bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-white transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div class="access-summary-box">
+          <div><strong>Cliente:</strong> <span id="admin-delete-access-email">-</span></div>
+          <div>Este motivo será exibido quando o cliente tentar acessar novamente.</div>
+        </div>
+        <div>
+          <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Motivo da exclusão</label>
+          <textarea id="admin-delete-access-reason" class="input-styled admin-delete-reason" maxlength="240" placeholder="Ex: Cadastro encerrado por solicitação do cliente ou assinatura cancelada."></textarea>
+        </div>
+        <div id="admin-delete-access-status" class="auth-status"></div>
+        <button type="button" class="delete-option-btn all" onclick="confirmAdminDeleteAccess()">Excluir cadastro</button>
+        <button type="button" class="delete-option-btn cancel" onclick="closeAdminDeleteAccessModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Meta -->
   <div id="modal-goal" class="modal-overlay" onclick="if(event.target === this) closeModalGoal()">
     <div class="modal-content">
@@ -2283,6 +2308,7 @@
     let adminAccessFilter = 'all';
     let adminAccessSearch = '';
     let expandedAdminAccessEmail = null;
+    let pendingAdminDeleteEmail = null;
     let lastTrialCredentials = null;
     let passwordChangeRequired = false;
     let isChangingPassword = false;
@@ -2933,9 +2959,49 @@
       repairMojibakeInDom(box);
     }
 
+    function formatAccessDeletionDetail(notice) {
+      if (!notice?.reason) return 'Este cadastro foi excluído pelo administrador.';
+      const deletedAt = notice.deleted_at
+        ? new Date(notice.deleted_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '';
+      const dateText = deletedAt ? ` em ${deletedAt}` : '';
+      return `Cadastro excluído${dateText}. Motivo: ${notice.reason}`;
+    }
+
+    async function fetchAccessDeletionNotice(email) {
+      const client = await ensureSupabase();
+      const normalizedEmail = normalizeEmail(email);
+      if (!client || !normalizedEmail) return null;
+      try {
+        const { data, error } = await withTimeout(
+          client.rpc('get_access_deletion_notice', { user_email: normalizedEmail }),
+          10000,
+          'Tempo limite ao consultar exclusão.'
+        );
+        if (error) throw error;
+        const notice = Array.isArray(data) ? data[0] : data;
+        return notice?.reason ? notice : null;
+      } catch (error) {
+        console.warn('Aviso de exclusão indisponível:', error);
+        return null;
+      }
+    }
+
+    async function showAccessDeletionNotice(email, fallbackDetail = '') {
+      const notice = await fetchAccessDeletionNotice(email);
+      if (!notice) return false;
+      showAccessLock('deleted', formatAccessDeletionDetail(notice) || fallbackDetail);
+      return true;
+    }
+
     function getAccessLockContent(reason, detail = '') {
       const supportMessage = 'Entre em contato com o Suporte para regularizar seu acesso.';
       const messages = {
+        deleted: {
+          title: 'Cadastro excluído',
+          message: supportMessage,
+          detail: detail || 'Seu cadastro foi excluído pelo administrador.'
+        },
         blocked: {
           title: 'Acesso bloqueado',
           message: supportMessage,
@@ -2975,6 +3041,7 @@
       closeModalGoal();
       closeModalGoalAdd();
       closeDeleteModal();
+      closeAdminDeleteAccessModal();
       closePasswordChangeModal();
       syncBodyLock();
     }
@@ -3982,6 +4049,11 @@
         }
 
         if (!access || accessStatus === 'missing') {
+          const deletionNotice = await fetchAccessDeletionNotice(user.email);
+          if (deletionNotice) {
+            await blockCurrentAccess('deleted', formatAccessDeletionDetail(deletionNotice));
+            return false;
+          }
           await blockCurrentAccess('unauthorized', 'Este e-mail ainda não foi liberado para uso. Entre em contato com o Suporte para regularizar.');
           return false;
         }
@@ -4106,6 +4178,7 @@
               : 'Conta criada. Confirme o e-mail ou desative a confirmação de e-mail no Supabase para liberar o primeiro acesso automático.');
             return;
           }
+          if (await showAccessDeletionNotice(email)) return;
           safeSetText('auth-status', 'Falha: e-mail ou senha incorretos.');
           return;
         }
@@ -4117,6 +4190,7 @@
           return;
         }
         if (isInvalidLoginError(error)) {
+          if (await showAccessDeletionNotice(email)) return;
           safeSetText('auth-status', authMode === 'login'
             ? 'Falha: e-mail ou senha incorretos.'
             : 'Falha: não foi possível concluir o primeiro acesso com esses dados.');
@@ -4127,6 +4201,7 @@
           return;
         }
         if (/banned|disabled|blocked/i.test(rawMessage)) {
+          if (await showAccessDeletionNotice(email)) return;
           showAccessLock('blocked', 'Sua conta está bloqueada. Entre em contato com o Suporte para regularizar.');
           return;
         }
@@ -4266,6 +4341,11 @@
           accessStatus = 'active';
         }
         if (accessStatus === 'missing') {
+          const deletionNotice = await fetchAccessDeletionNotice(currentSessionUser.email);
+          if (deletionNotice) {
+            await blockCurrentAccess('deleted', formatAccessDeletionDetail(deletionNotice));
+            return false;
+          }
           await blockCurrentAccess('unauthorized', 'Este e-mail não está liberado para uso. Entre em contato com o Suporte para regularizar.');
           return false;
         }
@@ -5004,6 +5084,43 @@
     function closeDeleteModal() {
       document.getElementById('modal-delete-recurring').classList.remove('active');
       syncBodyLock();
+    }
+
+    function openAdminDeleteAccessModal(email) {
+      const normalizedEmail = normalizeEmail(email);
+      const current = adminAccessRows.find(row => normalizeEmail(row.email) === normalizedEmail);
+      if (normalizeEmail(current?.email) === normalizeEmail(currentSessionUser?.email) && current?.role === 'admin') {
+        showToast('Não exclua a própria conta administradora por aqui.', 'error');
+        return;
+      }
+      pendingAdminDeleteEmail = normalizedEmail;
+      safeSetText('admin-delete-access-email', normalizedEmail || '-');
+      safeSetText('admin-delete-access-status', '');
+      const reasonInput = document.getElementById('admin-delete-access-reason');
+      if (reasonInput) reasonInput.value = '';
+      document.getElementById('modal-admin-delete-access')?.classList.add('active');
+      setTimeout(() => reasonInput?.focus(), 50);
+      syncBodyLock();
+    }
+
+    function closeAdminDeleteAccessModal() {
+      document.getElementById('modal-admin-delete-access')?.classList.remove('active');
+      pendingAdminDeleteEmail = null;
+      safeSetText('admin-delete-access-status', '');
+      syncBodyLock();
+    }
+
+    function confirmAdminDeleteAccess() {
+      const reason = document.getElementById('admin-delete-access-reason')?.value?.trim() || '';
+      if (!pendingAdminDeleteEmail) {
+        safeSetText('admin-delete-access-status', 'Nenhum cadastro selecionado.');
+        return;
+      }
+      if (reason.length < 8) {
+        safeSetText('admin-delete-access-status', 'Informe um motivo com pelo menos 8 caracteres.');
+        return;
+      }
+      deleteManagedAccess(pendingAdminDeleteEmail, reason);
     }
 
     // TRANSACAO
@@ -6192,7 +6309,7 @@
       const message = String(rawMessage);
       const lowerMessage = message.toLowerCase();
       if (lowerMessage.includes('could not find the function') || lowerMessage.includes('schema cache')) {
-        return 'Função do administrador não encontrada. Rode o SQL supabase_reparo_admin_rpc_final.sql no Supabase e atualize o app.';
+        return 'Função do administrador não encontrada. Rode o SQL mais recente no Supabase e atualize o app.';
       }
       if (lowerMessage.includes('permission') || lowerMessage.includes('permissão') || lowerMessage.includes('administrador')) {
         return 'Sua sessão não está reconhecida como administrador ativo. Rode o SQL de reparo e entre novamente no app.';
@@ -6215,10 +6332,11 @@
       if (error) throw error;
     }
 
-    async function deleteManagedAuthAccount(client, email) {
+    async function deleteManagedAuthAccount(client, email, deletionReason) {
       const { error } = await withTimeout(
         client.rpc('admin_delete_access_account', {
-          target_email: normalizeEmail(email)
+          target_email: normalizeEmail(email),
+          deletion_reason: String(deletionReason || '').trim()
         }),
         20000,
         'Tempo limite ao excluir a conta.'
@@ -6608,7 +6726,7 @@
                   <button class="admin-secondary-btn" onclick="updateManagedAccessValidity('${escapeJsString(row.email)}')">Salvar validade</button>
                   <button class="admin-secondary-btn warn" onclick="toggleManagedAccessStatus('${escapeJsString(row.email)}')">${row.effectiveStatus === 'blocked' ? 'Reativar' : 'Bloquear'}</button>
                   <button class="admin-secondary-btn" onclick="regenerateManagedPassword('${escapeJsString(row.email)}')">Gerar senha inicial</button>
-                  <button class="admin-secondary-btn danger" onclick="deleteManagedAccess('${escapeJsString(row.email)}')">Excluir acesso</button>
+                  <button class="admin-secondary-btn danger" onclick="openAdminDeleteAccessModal('${escapeJsString(row.email)}')">Excluir acesso</button>
                 </div>
               </div>
             ` : ''}
@@ -6779,8 +6897,12 @@
       }
     }
 
-    async function deleteManagedAccess(email) {
-      if (!confirm(`Excluir o acesso de ${email}? Isso bloqueia novas entradas e remove os dados sincronizados deste usuário.`)) return;
+    async function deleteManagedAccess(email, deletionReason = '') {
+      const reason = String(deletionReason || '').trim();
+      if (reason.length < 8) {
+        safeSetText('admin-delete-access-status', 'Informe um motivo antes de excluir o cadastro.');
+        return;
+      }
       if (!beginAdminAction('Excluindo acesso...')) return;
       try {
         const client = await ensureActiveSupabase();
@@ -6790,12 +6912,14 @@
           endAdminAction();
           return;
         }
-        await deleteManagedAuthAccount(client, email);
+        await deleteManagedAuthAccount(client, email, reason);
+        closeAdminDeleteAccessModal();
         await loadAdminData(true);
-        showToast('Acesso excluído com sucesso.');
+        showToast('Cadastro excluído e motivo salvo para o cliente.');
       } catch (error) {
         const message = getReadableError(error);
         safeSetText('admin-refresh-status', `Falha: ${message}`);
+        safeSetText('admin-delete-access-status', `Falha: ${message}`);
         showToast(`Não foi possível excluir o acesso: ${message}`, 'error');
       } finally {
         endAdminAction();
