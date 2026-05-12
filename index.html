@@ -690,6 +690,9 @@
     .sync-status-dot.saving { background: #ffb300; animation: syncPulse 1s ease-in-out infinite; }
     .sync-status-dot.off { background: #ff5252; }
     .sync-status-detail { color: #6b8a99; font-size: 11px; line-height: 1.45; }
+    .sync-last-card { padding: 11px 13px; border-radius: 12px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .sync-last-label { color: #6b8a99; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+    .sync-last-value { display: block; margin-top: 4px; color: #fff; font-size: 13px; font-weight: 800; }
     @keyframes syncPulse {
       0%, 100% { opacity: 0.45; transform: scale(0.82); }
       50% { opacity: 1; transform: scale(1.15); }
@@ -1676,6 +1679,10 @@
             <span id="settings-sync-text">Sincronização não iniciada</span>
           </div>
           <div id="settings-sync-detail" class="sync-status-detail">Aguardando primeira conexão com a nuvem.</div>
+          <div class="sync-last-card">
+            <span class="sync-last-label">Última sincronização na nuvem</span>
+            <strong class="sync-last-value" id="settings-cloud-last-sync">Ainda não registrada</strong>
+          </div>
           <div class="text-xs text-[#6b8a99] leading-5">A sincronização acontece quando você faz alterações. O botão manual continua disponível.</div>
           <div id="settings-access-note" class="text-xs text-[#86a8b7] leading-5"></div>
           <div id="settings-access-summary" class="access-summary-box hidden"></div>
@@ -2477,20 +2484,27 @@
       const time = value ? new Date(value).getTime() : 0;
       return Number.isFinite(time) ? time : 0;
     };
-    const getLocalStateUpdatedAt = (email = currentSessionUser?.email || State.profile.email || 'guest') => {
+    const getLocalStateMeta = (email = currentSessionUser?.email || State.profile.email || 'guest') => {
       try {
-        const meta = JSON.parse(localStorage.getItem(getLocalStateMetaKey(email)) || '{}');
-        return meta.updated_at || null;
+        return JSON.parse(localStorage.getItem(getLocalStateMetaKey(email)) || '{}');
       } catch (_) {
-        return null;
+        return {};
       }
     };
-    const setLocalStateUpdatedAt = (updatedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
+    const setLocalStateMeta = (meta = {}, email = currentSessionUser?.email || State.profile.email || 'guest') => {
       try {
-        localStorage.setItem(getLocalStateMetaKey(email), JSON.stringify({ updated_at: updatedAt }));
+        localStorage.setItem(getLocalStateMetaKey(email), JSON.stringify({ ...getLocalStateMeta(email), ...meta }));
       } catch (_) {
         return;
       }
+    };
+    const getLocalStateUpdatedAt = (email = currentSessionUser?.email || State.profile.email || 'guest') => getLocalStateMeta(email).updated_at || null;
+    const setLocalStateUpdatedAt = (updatedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
+      setLocalStateMeta({ updated_at: updatedAt }, email);
+    };
+    const getCloudSyncedAt = (email = currentSessionUser?.email || State.profile.email || 'guest') => getLocalStateMeta(email).cloud_synced_at || null;
+    const setCloudSyncedAt = (syncedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
+      setLocalStateMeta({ cloud_synced_at: syncedAt }, email);
     };
     const cloneDefaultState = () => ({
       ...JSON.parse(JSON.stringify(DEFAULT_STATE_TEMPLATE)),
@@ -2727,6 +2741,12 @@
       });
     }
 
+    function updateCloudLastSyncView() {
+      const email = currentSessionUser?.email || State.profile?.email || 'guest';
+      const syncedAt = getCloudSyncedAt(email);
+      safeSetText('settings-cloud-last-sync', syncedAt ? formatDataHealthDate(syncedAt) : 'Ainda não registrada');
+    }
+
     function getRecoverySnapshotStats(email = currentSessionUser?.email || State.profile?.email || 'guest') {
       const stats = { count: 0, latestAt: 0, latestCount: 0 };
       try {
@@ -2760,6 +2780,7 @@
       const status = document.getElementById('settings-data-health-status');
       const email = currentSessionUser?.email || State.profile?.email || 'guest';
       const localUpdatedAt = getLocalStateUpdatedAt(email);
+      const cloudSyncedAt = getCloudSyncedAt(email);
       const recoveryStats = getRecoverySnapshotStats(email);
       const protectedRestore = getProtectedRestoreState(email);
       const syncText = document.getElementById('settings-sync-text')?.textContent?.trim() || 'Sincronização não iniciada';
@@ -2778,6 +2799,7 @@
         status.textContent = statusText;
         status.className = `text-xs font-semibold ${statusText === 'Protegido' ? 'text-brand' : statusText === 'Sincronizando' ? 'text-warning' : 'text-[#86a8b7]'}`;
       }
+      updateCloudLastSyncView();
 
       const item = (label, value, note) => `
         <div class="data-health-item">
@@ -2790,7 +2812,7 @@
       container.innerHTML = [
         item('Salvamento', formatDataHealthDate(localUpdatedAt), 'Última confirmação neste aparelho.'),
         item('Backup', recoveryLabel, recoveryNote),
-        item('Nuvem', currentSessionUser ? syncText : 'Aguardando login', currentSessionUser ? 'Sincronização após cada alteração.' : 'Entre na conta para manter backup online.')
+        item('Nuvem', currentSessionUser ? syncText : 'Aguardando login', currentSessionUser ? `Última sincronização: ${formatDataHealthDate(cloudSyncedAt)}` : 'Entre na conta para manter backup online.')
       ].join('');
     }
 
@@ -4268,6 +4290,7 @@
         );
         if (error) throw error;
         setLocalStateUpdatedAt(payload.updated_at);
+        setCloudSyncedAt(payload.updated_at);
         const protectedRestore = getProtectedRestoreState(currentSessionUser.email);
         if (!protectedRestore || countStateTransactions(payload.app_state) >= protectedRestore.count) {
           clearProtectedRestoreState(currentSessionUser.email);
@@ -4416,6 +4439,7 @@
             refreshAppViews();
             updateAllAvatars();
             DB.save({ skipCloud: true, preserveUpdatedAt: remoteUpdatedAt });
+            if (remoteUpdatedAt) setCloudSyncedAt(remoteUpdatedAt, targetEmail);
             setSyncStatus('Dados carregados da nuvem.', 'ok');
           }
         } else {
