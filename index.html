@@ -473,8 +473,44 @@
     .profile-header-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #00b4a0 0%, #008577 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; overflow: hidden; flex-shrink: 0; }
     .profile-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
     
-    .goal-add-btn { padding: 10px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: rgba(0, 180, 160, 0.15); color: #00b4a0; transition: all 0.2s; min-width: 0; }
+    .goal-add-btn { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: rgba(0, 180, 160, 0.15); color: #00b4a0; transition: all 0.2s; min-width: 0; }
     .goal-add-btn:hover { background: rgba(0, 180, 160, 0.25); }
+    .goals-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+    .goal-stat-card { padding: 13px; border-radius: 14px; background: rgba(13, 31, 45, 0.82); border: 1px solid rgba(0, 180, 160, 0.08); min-width: 0; }
+    .goal-stat-label { color: #6b8a99; font-size: 11px; font-weight: 700; }
+    .goal-stat-value { display: block; margin-top: 5px; color: #fff; font-size: 15px; font-weight: 800; overflow-wrap: anywhere; }
+    .goals-list { display: grid; gap: 12px; margin-top: 14px; margin-bottom: 16px; }
+    .goal-card { padding: 16px; }
+    .goal-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .goal-title { color: #fff; font-size: 15px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .goal-meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
+    .goal-chip { display: inline-flex; align-items: center; min-height: 24px; padding: 5px 8px; border-radius: 999px; background: rgba(19, 42, 60, 0.78); color: #86a8b7; font-size: 10px; font-weight: 800; }
+    .goal-status { flex-shrink: 0; padding: 6px 9px; border-radius: 999px; background: rgba(0, 180, 160, 0.12); color: #7fe6d7; font-size: 11px; font-weight: 800; }
+    .goal-status.complete { background: rgba(0, 200, 83, 0.13); color: #8be0a7; }
+    .goal-status.overdue { background: rgba(255, 82, 82, 0.13); color: #ff9b9b; }
+    .goal-status.warning { background: rgba(255, 179, 0, 0.14); color: #ffd36b; }
+    .goal-status.archived { background: rgba(134, 168, 183, 0.12); color: #b8d0da; }
+    .goal-progress-track { height: 8px; border-radius: 999px; overflow: hidden; background: rgba(19, 42, 60, 0.9); }
+    .goal-progress-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #00b4a0, #00d4b8); transition: width .25s ease; }
+    .goal-progress-bar.complete { background: linear-gradient(90deg, #00c853, #8be0a7); }
+    .goal-progress-bar.overdue { background: linear-gradient(90deg, #ff5252, #ff9b9b); }
+    .goal-progress-bar.warning { background: linear-gradient(90deg, #ffb300, #ffd36b); }
+    .goal-money-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+    .goal-money-item { padding: 10px; border-radius: 12px; background: rgba(13, 31, 45, 0.7); min-width: 0; }
+    .goal-money-label { color: #6b8a99; font-size: 10px; font-weight: 700; }
+    .goal-money-value { display: block; margin-top: 4px; color: #fff; font-size: 12px; font-weight: 800; overflow-wrap: anywhere; }
+    .goal-plan-note { color: #86a8b7; font-size: 11px; line-height: 1.45; margin-top: 10px; }
+    .goal-history { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(0, 180, 160, 0.06); display: grid; gap: 6px; }
+    .goal-history-title { color: #6b8a99; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+    .goal-history-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #cfe9ef; font-size: 11px; }
+    .goal-history-row span:last-child { color: #7fe6d7; font-weight: 800; white-space: nowrap; }
+    .goal-action-row { display: grid; grid-template-columns: 1fr 42px 42px; gap: 8px; align-items: center; }
+    .goal-icon-btn { height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: rgba(0, 180, 160, 0.1); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.14); }
+    .goal-icon-btn.warn { background: rgba(255, 179, 0, 0.1); color: #ffd36b; border-color: rgba(255, 179, 0, 0.14); }
+    .goal-icon-btn.danger { background: rgba(255, 82, 82, 0.1); color: #ff8b8b; border-color: rgba(255, 82, 82, 0.14); }
+    .goal-empty-state { padding: 28px 18px; text-align: center; color: #86a8b7; }
+    .goal-empty-state strong { display: block; color: #fff; font-size: 15px; margin-bottom: 6px; }
+    @media (max-width: 430px) { .goal-money-row { grid-template-columns: 1fr; } }
     
     .quick-action-card { display: flex; align-items: center; gap: 14px; padding: 16px; background: linear-gradient(145deg, #132a3c 0%, #0f232f 100%); border-radius: 14px; border: 1px solid rgba(0, 180, 160, 0.1); cursor: pointer; transition: all 0.2s; }
     .quick-action-card:hover { border-color: rgba(0, 180, 160, 0.2); transform: translateY(-2px); }
@@ -1437,11 +1473,46 @@
         </div>
       </div>
       
-      <div id="goals-empty" class="card mt-4 py-12 text-center text-[#6b8a99]">
-        <p class="text-sm">Nenhuma meta cadastrada</p>
+      <div class="goals-summary-grid">
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Guardado</span>
+          <strong class="goal-stat-value text-income" id="goals-total-current">R$ 0,00</strong>
+        </div>
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Objetivo total</span>
+          <strong class="goal-stat-value text-brand" id="goals-total-target">R$ 0,00</strong>
+        </div>
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Falta atingir</span>
+          <strong class="goal-stat-value text-warning" id="goals-total-remaining">R$ 0,00</strong>
+        </div>
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Concluídas</span>
+          <strong class="goal-stat-value" id="goals-completed-count">0</strong>
+        </div>
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Guardar por mês</span>
+          <strong class="goal-stat-value text-brand" id="goals-monthly-needed">R$ 0,00</strong>
+        </div>
+        <div class="goal-stat-card">
+          <span class="goal-stat-label">Arquivadas</span>
+          <strong class="goal-stat-value" id="goals-archived-count">0</strong>
+        </div>
+      </div>
+
+      <div class="section-tabs mt-4" aria-label="Filtro de metas">
+        <button type="button" class="section-tab-btn active" data-goal-tab="all" onclick="switchGoalsTab('all')">Todas<span class="section-tab-count" id="goal-all-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-goal-tab="active" onclick="switchGoalsTab('active')">Em andamento<span class="section-tab-count" id="goal-active-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-goal-tab="completed" onclick="switchGoalsTab('completed')">Concluídas<span class="section-tab-count" id="goal-completed-tab-count">0</span></button>
+        <button type="button" class="section-tab-btn" data-goal-tab="archived" onclick="switchGoalsTab('archived')">Arquivadas<span class="section-tab-count" id="goal-archived-tab-count">0</span></button>
+      </div>
+
+      <div id="goals-empty" class="card mt-4 goal-empty-state">
+        <strong>Nenhuma meta cadastrada</strong>
+        <p class="text-sm">Crie uma meta para acompanhar quanto falta guardar.</p>
         <button class="mt-4 px-6 py-2.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors" onclick="openModalGoal()">Criar Meta</button>
       </div>
-      <div id="goals-list" class="hidden mt-4 space-y-3 mb-4"></div>
+      <div id="goals-list" class="goals-list hidden"></div>
     </section>
 
       <!-- RELATÓRIOS -->
@@ -2042,7 +2113,7 @@
   <div id="modal-goal" class="modal-overlay" onclick="if(event.target === this) closeModalGoal()">
     <div class="modal-content">
       <div class="modal-title-row">
-        <h2 class="font-display text-lg font-bold text-white">Nova Meta</h2>
+        <h2 class="font-display text-lg font-bold text-white" id="modal-goal-title">Nova Meta</h2>
         <button onclick="closeModalGoal()" class="w-8 h-8 rounded-lg bg-[#0d1f2d] flex items-center justify-center text-[#6b8a99] hover:text-white transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -2052,8 +2123,25 @@
         <input type="hidden" id="goal-id">
         <div class="space-y-4">
           <div>
-            <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Titulo</label>
+            <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Título</label>
             <input type="text" id="goal-title" class="input-styled" placeholder="Ex: Viagem" required>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Tipo da Meta</label>
+              <select id="goal-category" class="input-styled">
+                <option value="reserve">Reserva</option>
+                <option value="travel">Viagem</option>
+                <option value="purchase">Compra</option>
+                <option value="debt">Dívida</option>
+                <option value="emergency">Emergência</option>
+                <option value="other">Outro</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Prazo</label>
+              <input type="month" id="goal-deadline" class="input-styled">
+            </div>
           </div>
           <div class="form-grid">
             <div>
@@ -2105,6 +2193,10 @@
               <input type="text" id="goal-add-amount" class="input-styled pl-12" placeholder="0,00" required oninput="formatCurrency(this)">
             </div>
           </div>
+          <div>
+            <label class="text-xs text-[#6b8a99] font-medium mb-2 block">Data do Aporte</label>
+            <input type="date" id="goal-add-date" class="input-styled">
+          </div>
           <button type="submit" class="w-full py-3.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors mt-2">Adicionar</button>
         </div>
       </form>
@@ -2155,6 +2247,7 @@
     let activeReportTab = 'summary';
     let activeControlTab = 'income';
     let activeDashboardTab = 'overview';
+    let activeGoalsTab = 'all';
 
     const DEFAULT_STATE_TEMPLATE = {
       transactions: [],
@@ -2244,6 +2337,15 @@
     const formatCurrency = (el) => { let v = el.value.replace(/\D/g, ''); v = (parseInt(v||0) / 100).toFixed(2).replace('.', ','); el.value = v; };
     const getCategory = (id) => [...State.categories.expense, ...State.categories.income].find(c => c.id === id) || { name: 'Outros', color: '#6b8a99' };
     const getAccount = (id) => State.accounts.find(account => account.id === id) || State.accounts[0] || { id: 'default', name: 'Conta', type: 'Conta', color: '#00b4a0' };
+    const GOAL_CATEGORIES = {
+      reserve: 'Reserva',
+      travel: 'Viagem',
+      purchase: 'Compra',
+      debt: 'Dívida',
+      emergency: 'Emergência',
+      other: 'Outro'
+    };
+    const getGoalCategoryLabel = (category = 'other') => GOAL_CATEGORIES[category] || GOAL_CATEGORIES.other;
     const sortTransactionsByDateDesc = (transactions) => [...transactions].sort((a, b) => {
       const dateDiff = (parseLocalDate(b.date)?.getTime() || 0) - (parseLocalDate(a.date)?.getTime() || 0);
       if (dateDiff !== 0) return dateDiff;
@@ -4734,11 +4836,30 @@
 
     function openModalGoal() {
       document.getElementById('modal-goal').classList.add('active');
+      safeSetText('modal-goal-title', 'Nova Meta');
       document.getElementById('goal-id').value = '';
       document.getElementById('goal-title').value = '';
+      document.getElementById('goal-category').value = 'reserve';
+      document.getElementById('goal-deadline').value = '';
       document.getElementById('goal-target').value = '';
       document.getElementById('goal-current').value = '';
       editingGoalId = null;
+      syncBodyLock();
+    }
+
+    function editGoal(id) {
+      const goal = State.goals.find(g => g.id === id);
+      if (!goal) return;
+
+      editingGoalId = id;
+      safeSetText('modal-goal-title', 'Editar Meta');
+      document.getElementById('goal-id').value = id;
+      document.getElementById('goal-title').value = goal.title || '';
+      document.getElementById('goal-category').value = goal.category || 'other';
+      document.getElementById('goal-deadline').value = normalizeGoalDeadline(goal.deadline);
+      document.getElementById('goal-target').value = Number(goal.target || 0).toFixed(2).replace('.', ',');
+      document.getElementById('goal-current').value = Number(goal.current || 0).toFixed(2).replace('.', ',');
+      document.getElementById('modal-goal').classList.add('active');
       syncBodyLock();
     }
 
@@ -4757,6 +4878,7 @@
       document.getElementById('goal-add-current').textContent = formatMoney(goal.current);
       document.getElementById('goal-add-target').textContent = formatMoney(goal.target);
       document.getElementById('goal-add-amount').value = '';
+      document.getElementById('goal-add-date').value = toDateInputValue(new Date());
       document.getElementById('modal-goal-add').classList.add('active');
       syncBodyLock();
     }
@@ -4949,12 +5071,32 @@
     // METAS
     function saveGoal(e) {
       e.preventDefault();
+      const title = document.getElementById('goal-title').value.trim();
+      const target = parseMoney(document.getElementById('goal-target').value);
+      const current = parseMoney(document.getElementById('goal-current').value) || 0;
+      const existingGoal = editingGoalId ? State.goals.find(g => g.id === editingGoalId) : null;
+      const category = document.getElementById('goal-category').value || 'other';
+      const deadline = normalizeGoalDeadline(document.getElementById('goal-deadline').value);
+
+      if (!title) {
+        showToast('Informe o nome da meta.', 'error');
+        return;
+      }
+      if (target <= 0) {
+        showToast('Informe um valor de meta válido.', 'error');
+        return;
+      }
       
       const goal = {
         id: editingGoalId || Date.now().toString(),
-        title: document.getElementById('goal-title').value,
-        target: parseMoney(document.getElementById('goal-target').value),
-        current: parseMoney(document.getElementById('goal-current').value) || 0
+        title,
+        category,
+        deadline,
+        target,
+        current: Math.min(current, target),
+        archived: Boolean(existingGoal?.archived),
+        createdAt: existingGoal?.createdAt || new Date().toISOString(),
+        contributions: Array.isArray(existingGoal?.contributions) ? existingGoal.contributions : []
       };
       
       if(editingGoalId) {
@@ -4975,25 +5117,196 @@
       
       const id = document.getElementById('goal-add-id').value;
       const amount = parseMoney(document.getElementById('goal-add-amount').value);
+      const date = document.getElementById('goal-add-date').value || toDateInputValue(new Date());
+      if (amount <= 0) {
+        showToast('Informe um valor válido para adicionar.', 'error');
+        return;
+      }
       
       const goal = State.goals.find(g => g.id === id);
+      if (!goal) {
+        showToast('Meta não encontrada.', 'error');
+        return;
+      }
       if(goal) {
-        goal.current = Math.min(goal.current + amount, goal.target);
+        const progress = getGoalProgress(goal);
+        const appliedAmount = Math.min(amount, progress.remaining);
+        if (appliedAmount <= 0) {
+          showToast('Essa meta já está concluída.', 'error');
+          return;
+        }
+        goal.current = Math.min((Number(goal.current) || 0) + appliedAmount, Number(goal.target) || 0);
+        goal.contributions = Array.isArray(goal.contributions) ? goal.contributions : [];
+        goal.contributions.unshift({
+          id: `${Date.now()}`,
+          amount: appliedAmount,
+          date
+        });
       }
       
       closeModalGoalAdd();
       renderGoals();
       persistAndRefresh();
-      showToast('Valor adicionado a meta!');
+      showToast('Valor adicionado à meta!');
     }
 
     function deleteGoal(id) {
-      if(confirm('Excluir esta meta?')) {
+      const goal = State.goals.find(g => g.id === id);
+      if (!goal) return;
+      if (goal.archived) {
+        deleteGoalPermanently(id);
+        return;
+      }
+      archiveGoal(id);
+    }
+
+    function archiveGoal(id) {
+      const goal = State.goals.find(g => g.id === id);
+      if (!goal) return;
+      goal.archived = true;
+      renderGoals();
+      persistAndRefresh();
+      showToast('Meta arquivada.');
+    }
+
+    function restoreGoal(id) {
+      const goal = State.goals.find(g => g.id === id);
+      if (!goal) return;
+      goal.archived = false;
+      renderGoals();
+      persistAndRefresh();
+      showToast('Meta restaurada.');
+    }
+
+    function deleteGoalPermanently(id) {
+      if(confirm('Excluir definitivamente esta meta arquivada?')) {
         State.goals = State.goals.filter(g => g.id !== id);
         renderGoals();
         persistAndRefresh();
         showToast('Meta excluída', 'error');
       }
+    }
+
+    function normalizeGoalDeadline(value) {
+      if (!value) return '';
+      const raw = String(value).trim();
+      const monthMatch = raw.match(/^(\d{4})-(\d{2})/);
+      if (!monthMatch) return '';
+      return `${monthMatch[1]}-${monthMatch[2]}`;
+    }
+
+    function parseGoalDeadline(value) {
+      const normalized = normalizeGoalDeadline(value);
+      if (!normalized) return null;
+      const [year, month] = normalized.split('-').map(Number);
+      const date = new Date(year, month, 0);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function getGoalDeadlineLabel(value) {
+      const date = parseGoalDeadline(value);
+      return date ? date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) : 'Sem prazo';
+    }
+
+    function getGoalMonthsRemaining(value) {
+      const deadline = parseGoalDeadline(value);
+      if (!deadline) return null;
+      const today = new Date();
+      const current = new Date(today.getFullYear(), today.getMonth(), 1);
+      const target = new Date(deadline.getFullYear(), deadline.getMonth(), 1);
+      return ((target.getFullYear() - current.getFullYear()) * 12) + (target.getMonth() - current.getMonth()) + 1;
+    }
+
+    function getGoalProgress(goal) {
+      const target = Math.max(0, Number(goal?.target) || 0);
+      const current = Math.max(0, Number(goal?.current) || 0);
+      const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+      const remaining = Math.max(0, target - current);
+      const monthsRemaining = getGoalMonthsRemaining(goal?.deadline);
+      const monthlyRequired = monthsRemaining && monthsRemaining > 0 ? remaining / monthsRemaining : 0;
+      const archived = Boolean(goal?.archived);
+      let status = { label: 'Em andamento', className: '', rank: 3, detail: 'Meta sem prazo definido.' };
+
+      if (archived) {
+        status = { label: 'Arquivada', className: 'archived', rank: 6, detail: 'Meta guardada no histórico.' };
+      } else if (target > 0 && current >= target) {
+        status = { label: 'Concluída', className: 'complete', rank: 5, detail: 'Objetivo alcançado.' };
+      } else if (monthsRemaining !== null && monthsRemaining <= 0) {
+        status = { label: 'Atrasada', className: 'overdue', rank: 0, detail: 'Prazo vencido. Reajuste o prazo ou faça um novo aporte.' };
+      } else if (pct >= 80) {
+        status = { label: 'Quase lá', className: 'warning', rank: 2, detail: 'Meta perto de ser concluída.' };
+      } else if (monthsRemaining !== null && monthsRemaining <= 1) {
+        status = { label: 'Prioridade', className: 'warning', rank: 1, detail: 'Prazo muito próximo.' };
+      } else if (monthsRemaining !== null) {
+        status = { label: 'No prazo', className: '', rank: 3, detail: `${monthsRemaining} ${monthsRemaining === 1 ? 'mês restante' : 'meses restantes'}.` };
+      }
+
+      return {
+        target,
+        current,
+        pct,
+        remaining,
+        completed: target > 0 && current >= target,
+        archived,
+        monthsRemaining,
+        monthlyRequired,
+        status
+      };
+    }
+
+    function updateGoalsSummary(goals = State.goals) {
+      const normalizedGoals = Array.isArray(goals) ? goals : [];
+      if (!['all', 'active', 'completed', 'archived'].includes(activeGoalsTab)) activeGoalsTab = 'all';
+      const summary = normalizedGoals.reduce((acc, goal) => {
+        const progress = getGoalProgress(goal);
+        if (progress.archived) {
+          acc.archived += 1;
+          return acc;
+        }
+        acc.current += progress.current;
+        acc.target += progress.target;
+        acc.remaining += progress.remaining;
+        if (!progress.completed) acc.monthlyNeeded += progress.monthlyRequired;
+        if (progress.completed) acc.completed += 1;
+        return acc;
+      }, { current: 0, target: 0, remaining: 0, completed: 0, archived: 0, monthlyNeeded: 0 });
+
+      const visibleGoals = normalizedGoals.filter(goal => !getGoalProgress(goal).archived);
+      const activeCount = visibleGoals.filter(goal => !getGoalProgress(goal).completed).length;
+      safeSetText('goals-total-current', formatMoney(summary.current));
+      safeSetText('goals-total-target', formatMoney(summary.target));
+      safeSetText('goals-total-remaining', formatMoney(summary.remaining));
+      safeSetText('goals-completed-count', `${summary.completed}/${visibleGoals.length}`);
+      safeSetText('goals-monthly-needed', formatMoney(summary.monthlyNeeded));
+      safeSetText('goals-archived-count', String(summary.archived));
+      safeSetText('goal-all-tab-count', String(visibleGoals.length));
+      safeSetText('goal-active-tab-count', String(activeCount));
+      safeSetText('goal-completed-tab-count', String(summary.completed));
+      safeSetText('goal-archived-tab-count', String(summary.archived));
+
+      document.querySelectorAll('[data-goal-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.goalTab === activeGoalsTab);
+      });
+    }
+
+    function switchGoalsTab(tab = 'all', { scroll = true } = {}) {
+      activeGoalsTab = ['all', 'active', 'completed', 'archived'].includes(tab) ? tab : 'all';
+      renderGoals();
+      if (scroll && !document.getElementById('page-goals')?.classList.contains('hidden')) {
+        document.querySelector('#page-goals .section-tabs')?.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function sortGoalsForDisplay(goals = []) {
+      return [...goals].sort((a, b) => {
+        const ap = getGoalProgress(a);
+        const bp = getGoalProgress(b);
+        if (ap.status.rank !== bp.status.rank) return ap.status.rank - bp.status.rank;
+        const aDeadline = parseGoalDeadline(a.deadline)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const bDeadline = parseGoalDeadline(b.deadline)?.getTime() || Number.MAX_SAFE_INTEGER;
+        if (aDeadline !== bDeadline) return aDeadline - bDeadline;
+        return bp.pct - ap.pct;
+      });
     }
 
     // RENDER
@@ -5273,32 +5586,112 @@
     function renderGoals() {
       const emptyEl = document.getElementById('goals-empty');
       const listEl = document.getElementById('goals-list');
+      const goals = Array.isArray(State.goals) ? State.goals : [];
+      updateGoalsSummary(goals);
+
+      const filteredGoals = sortGoalsForDisplay(goals.filter(goal => {
+        const progress = getGoalProgress(goal);
+        if (activeGoalsTab === 'archived') return progress.archived;
+        if (activeGoalsTab === 'active') return !progress.archived && !progress.completed;
+        if (activeGoalsTab === 'completed') return !progress.archived && progress.completed;
+        return !progress.archived;
+      }));
       
-      if(State.goals.length === 0) {
+      if(goals.length === 0) {
+        emptyEl.innerHTML = `
+          <strong>Nenhuma meta cadastrada</strong>
+          <p class="text-sm">Crie uma meta para acompanhar quanto falta guardar.</p>
+          <button class="mt-4 px-6 py-2.5 bg-brand text-white font-semibold rounded-xl hover:bg-brand-light transition-colors" onclick="openModalGoal()">Criar Meta</button>
+        `;
+        emptyEl.classList.remove('hidden');
+        listEl.classList.add('hidden');
+      } else if(filteredGoals.length === 0) {
+        emptyEl.innerHTML = `
+          <strong>Nenhuma meta nesta visão</strong>
+          <p class="text-sm">Altere o filtro para visualizar suas outras metas.</p>
+          <button class="mt-4 px-6 py-2.5 bg-brand/15 text-brand font-semibold rounded-xl hover:bg-brand/25 transition-colors" onclick="switchGoalsTab('all')">Ver Todas</button>
+        `;
         emptyEl.classList.remove('hidden');
         listEl.classList.add('hidden');
       } else {
         emptyEl.classList.add('hidden');
         listEl.classList.remove('hidden');
         
-        listEl.innerHTML = State.goals.map(g => {
-          const pct = g.target > 0 ? Math.min(100, (g.current / g.target * 100)).toFixed(0) : 0;
+        listEl.innerHTML = filteredGoals.map(g => {
+          const progress = getGoalProgress(g);
+          const contributions = Array.isArray(g.contributions) ? g.contributions : [];
+          const recentContributions = contributions
+            .slice()
+            .sort((a, b) => (parseLocalDate(b.date)?.getTime() || 0) - (parseLocalDate(a.date)?.getTime() || 0))
+            .slice(0, 3);
+          const historyHtml = recentContributions.length
+            ? `<div class="goal-history">
+                <div class="goal-history-title">Últimos aportes</div>
+                ${recentContributions.map(item => `
+                  <div class="goal-history-row">
+                    <span>${formatDate(item.date)}</span>
+                    <span>${formatMoney(Number(item.amount) || 0)}</span>
+                  </div>
+                `).join('')}
+              </div>`
+            : '';
+          const primaryAction = progress.archived
+            ? `<button onclick="restoreGoal('${escapeJsString(g.id)}')" class="goal-add-btn">Restaurar Meta</button>`
+            : progress.completed
+              ? `<button onclick="archiveGoal('${escapeJsString(g.id)}')" class="goal-add-btn">Arquivar Meta</button>`
+              : `<button onclick="openModalGoalAdd('${escapeJsString(g.id)}')" class="goal-add-btn">Adicionar Valor</button>`;
+          const monthlyGoalText = progress.archived || progress.completed
+            ? formatMoney(0)
+            : progress.monthsRemaining && progress.monthsRemaining > 0
+              ? formatMoney(progress.monthlyRequired)
+              : 'Sem prazo';
+          const archiveOrDeleteButton = progress.archived
+            ? `<button onclick="deleteGoalPermanently('${escapeJsString(g.id)}')" class="goal-icon-btn danger" title="Excluir definitivamente" aria-label="Excluir definitivamente">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m2 0H7m3 0V5a2 2 0 012-2h0a2 2 0 012 2v2"/></svg>
+              </button>`
+            : `<button onclick="archiveGoal('${escapeJsString(g.id)}')" class="goal-icon-btn warn" title="Arquivar meta" aria-label="Arquivar meta">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8l4 4 4-4m-8 8h14a2 2 0 002-2V7a2 2 0 00-2-2h-4l-2-2H7a2 2 0 00-2 2v11z"/></svg>
+              </button>`;
           return `
-            <div class="card p-4">
-              <div class="flex justify-between items-start mb-3">
-                <h3 class="font-semibold text-white">${escapeHtml(g.title)}</h3>
-                <span class="text-xs text-[#6b8a99]">${pct}%</span>
+            <div class="card goal-card">
+              <div class="goal-card-head">
+                <h3 class="goal-title">${escapeHtml(g.title)}</h3>
+                <span class="goal-status ${progress.status.className}">${progress.status.label}</span>
               </div>
-              <div class="h-2 rounded-full overflow-hidden mb-3" style="background: rgba(19, 42, 60, 0.8)">
-                <div class="h-full rounded-full bg-brand transition-all" style="width: ${pct}%"></div>
+              <div class="goal-meta-row">
+                <span class="goal-chip">${escapeHtml(getGoalCategoryLabel(g.category))}</span>
+                <span class="goal-chip">${escapeHtml(getGoalDeadlineLabel(g.deadline))}</span>
+                <span class="goal-chip">${progress.pct}% concluído</span>
               </div>
-              <div class="flex justify-between text-xs mb-3">
-                <span class="text-[#6b8a99]">Atual: <span class="text-white font-semibold">${formatMoney(g.current)}</span></span>
-                <span class="text-[#6b8a99]">Meta: <span class="text-brand font-semibold">${formatMoney(g.target)}</span></span>
+              <div class="goal-progress-track">
+                <div class="goal-progress-bar ${progress.status.className}" style="width: ${progress.pct}%"></div>
               </div>
-              <div class="button-row">
-                <button onclick="openModalGoalAdd('${escapeJsString(g.id)}')" class="goal-add-btn flex-1">Adicionar Valor</button>
-                <button onclick="deleteGoal('${escapeJsString(g.id)}')" class="goal-add-btn" style="background: rgba(255, 82, 82, 0.15); color: #ff5252;">Excluir</button>
+              <div class="goal-money-row">
+                <div class="goal-money-item">
+                  <span class="goal-money-label">Atual</span>
+                  <strong class="goal-money-value">${formatMoney(progress.current)}</strong>
+                </div>
+                <div class="goal-money-item">
+                  <span class="goal-money-label">Meta</span>
+                  <strong class="goal-money-value text-brand">${formatMoney(progress.target)}</strong>
+                </div>
+                <div class="goal-money-item">
+                  <span class="goal-money-label">Falta</span>
+                  <strong class="goal-money-value text-warning">${formatMoney(progress.remaining)}</strong>
+                </div>
+                <div class="goal-money-item">
+                  <span class="goal-money-label">Por mês</span>
+                  <strong class="goal-money-value text-brand">${monthlyGoalText}</strong>
+                </div>
+              </div>
+              <p class="goal-plan-note">${escapeHtml(progress.status.detail)}${!progress.archived && !progress.completed && progress.monthsRemaining ? ` Sugestão: guardar ${formatMoney(progress.monthlyRequired)} por mês.` : ''}</p>
+              ${historyHtml}
+              <div class="goal-action-row">
+                ${primaryAction}
+                <button onclick="editGoal('${escapeJsString(g.id)}')" class="goal-icon-btn" title="Editar meta" aria-label="Editar meta">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                ${archiveOrDeleteButton}
               </div>
             </div>
           `;
