@@ -1772,7 +1772,6 @@
           <div id="settings-access-summary" class="access-summary-box hidden"></div>
           <div class="space-y-2">
             <button onclick="syncCloudNow()" class="settings-action-btn">Sincronizar Agora</button>
-            <button onclick="openLoginScreen('Entre novamente para carregar seus dados da nuvem. Seus dados locais continuam salvos neste aparelho.')" class="settings-action-btn secondary">Entrar Novamente</button>
             <button onclick="logoutCloud()" class="w-full p-3 rounded-xl bg-expense/10 hover:bg-expense/20 transition-colors text-expense font-semibold">Sair da Conta</button>
           </div>
         </div>
@@ -3320,6 +3319,50 @@
       setTimeout(() => document.getElementById('auth-email')?.focus(), 80);
     }
 
+    function findQuickAccessEntry(email = '', password = '') {
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail || !password) return null;
+      return getQuickAccessEntries().find(entry =>
+        normalizeEmail(entry.email) === normalizedEmail &&
+        decodeQuickAccessSecret(entry.password) === password
+      ) || null;
+    }
+
+    function openOfflineLocalSession(email, password) {
+      const normalizedEmail = normalizeEmail(email);
+      if (!normalizedEmail) return false;
+      const trustedEntry = findQuickAccessEntry(normalizedEmail, password);
+      if (!trustedEntry) {
+        safeSetText('auth-status', 'Sem internet. Para entrar offline, use um acesso rápido salvo neste aparelho.');
+        return false;
+      }
+      currentSessionUser = null;
+      loadedSessionUserId = null;
+      currentAccessProfile = null;
+      currentAllowedAccess = null;
+      resetVisibleStateForAccount({ email: normalizedEmail }, 'Carregando dados locais...');
+      const loadedAt = DB.load(normalizedEmail);
+      const hasLocalData = countStateTransactions(State) > 0 || Boolean(State.profile?.email);
+      if (!hasLocalData) {
+        resetVisibleStateForAccount(null, 'Nenhum dado local encontrado.');
+        openLoginScreen('Nenhum dado local foi encontrado para esse acesso rápido.');
+        return false;
+      }
+      setLastActiveEmail(State.profile?.email || normalizedEmail);
+      refreshAppViews();
+      renderGoals();
+      populateAccountOptions();
+      updateAllAvatars();
+      showAuthShell(false);
+      setSyncStatus(
+        'Modo offline ativo.',
+        'warn',
+        `${loadedAt ? 'Dados locais carregados com sucesso.' : 'Dados locais carregados.'} Quando a internet voltar, entre novamente para sincronizar com a nuvem.`
+      );
+      safeSetText('auth-status', 'Modo offline liberado neste aparelho.');
+      return true;
+    }
+
     function showLocalModeIfAvailable() {
       const bootstrapEmail = getBootstrapLocalEmail();
       if (!bootstrapEmail) return false;
@@ -4418,6 +4461,12 @@
       const password = document.getElementById('auth-password').value;
       safeSetText('auth-status', 'Entrando...');
 
+      if (!navigator.onLine) {
+        if (openOfflineLocalSession(email, password)) return;
+        safeSetText('auth-status', 'Sem internet. Use um acesso rápido salvo neste aparelho para abrir seus dados locais.');
+        return;
+      }
+
       try {
         const currentEmail = normalizeEmail(currentSessionUser?.email || State.profile?.email);
         if (currentEmail && currentEmail !== email) {
@@ -4675,7 +4724,7 @@
       if (!client || !currentSessionUser) {
         if (!silent) {
           setSyncStatus('Salvo neste aparelho. Nuvem indisponível.', 'warn', 'Entre na conta e confira sua conexão para enviar os dados locais.');
-          openLoginScreen('Entre na conta para enviar seus dados locais para a nuvem.');
+          safeSetText('auth-status', 'Entre na conta quando houver internet para enviar seus dados locais para a nuvem.');
           showToast('Sem sessão ativa na nuvem. Seus dados continuam salvos neste aparelho.', 'error');
         }
         return false;
@@ -4920,20 +4969,17 @@
       clearLegacyLocalAuthStorage();
       const client = await ensureSupabase();
       if (!client) {
-        showAuthShell(false);
+        openLoginScreen('Conexão com a nuvem indisponível. Você ainda pode entrar offline com um acesso rápido salvo neste aparelho.');
         return;
       }
-      const hasLocalMode = showLocalModeIfAvailable();
-      if (!hasLocalMode) {
-        showAuthShell(true);
-      }
+      showAuthShell(true);
       toggleAdminUi(false);
       setSyncStatus(
-        hasLocalMode ? 'Modo local disponível.' : 'Entre para salvar seus dados na nuvem.',
+        'Entre para salvar seus dados na nuvem.',
         'warn',
-        hasLocalMode
-          ? 'As alterações continuam salvas neste aparelho e serão enviadas quando você entrar novamente.'
-          : 'O login automático foi desativado neste aparelho.'
+        navigator.onLine
+          ? 'O login automático foi desativado neste aparelho.'
+          : 'Sem internet no momento. Use um acesso rápido salvo neste aparelho para abrir seus dados locais.'
       );
       switchAuthMode('login');
 
@@ -4963,9 +5009,7 @@
           passwordChangeRequired = false;
           toggleAdminUi(false);
           resetVisibleStateForAccount(null, 'Sessão encerrada.');
-          if (!showLocalModeIfAvailable()) {
-            showAuthShell(true);
-          }
+          openLoginScreen('Sessão encerrada. Entre novamente para acessar seus dados.');
         }
       });
     }
@@ -7766,8 +7810,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       DB.load();
       installEncodingRepairObserver();
-      const hasBootLocalMode = showLocalModeIfAvailable();
-      showAuthShell(!hasBootLocalMode);
+      showAuthShell(true);
       
       // Sincroniza inputs de data com estado
       initTxDatePicker();
@@ -7801,7 +7844,7 @@
         if (currentSessionUser && !accessLockActive) {
           setSyncStatus('Internet restabelecida. Enviando alterações pendentes...', 'saving');
           syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao voltar internet:', error));
-        } else if (showLocalModeIfAvailable()) {
+        } else if (!document.getElementById('app')?.classList.contains('hidden')) {
           setSyncStatus('Internet disponível. Entre na conta para sincronizar a nuvem.', 'warn');
         }
         resumeForegroundWork();
