@@ -2359,6 +2359,7 @@
     const RECOVERY_STATE_PREFIX = `${LOCAL_STATE_PREFIX}:recovery`;
     const PROTECTED_RESTORE_PREFIX = `${LOCAL_STATE_PREFIX}:protected_restore`;
     const QUICK_ACCESS_STORAGE_KEY = `${LOCAL_STATE_PREFIX}:quick_access`;
+    const LAST_ACTIVE_EMAIL_KEY = `${LOCAL_STATE_PREFIX}:last_active_email`;
     const MAX_RECOVERY_SNAPSHOTS_PER_USER = 8;
     const AUTO_RECOVERY_MIN_INTERVAL_MS = 3 * 60 * 1000;
     let supabaseClient = null;
@@ -2648,6 +2649,31 @@
     const getCloudSyncedAt = (email = currentSessionUser?.email || State.profile.email || 'guest') => getLocalStateMeta(email).cloud_synced_at || null;
     const setCloudSyncedAt = (syncedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
       setLocalStateMeta({ cloud_synced_at: syncedAt }, email);
+    };
+    const getLastActiveEmail = () => {
+      try {
+        return normalizeEmail(localStorage.getItem(LAST_ACTIVE_EMAIL_KEY) || '');
+      } catch (_) {
+        return '';
+      }
+    };
+    const setLastActiveEmail = (email = '') => {
+      const normalized = normalizeEmail(email);
+      if (!normalized) return;
+      try {
+        localStorage.setItem(LAST_ACTIVE_EMAIL_KEY, normalized);
+      } catch (_) {
+        return;
+      }
+    };
+    const getBootstrapLocalEmail = () => {
+      const candidate = getLastActiveEmail();
+      if (!candidate) return '';
+      try {
+        return localStorage.getItem(getLocalStateKey(candidate)) ? candidate : '';
+      } catch (_) {
+        return '';
+      }
     };
     const cloneDefaultState = () => ({
       ...JSON.parse(JSON.stringify(DEFAULT_STATE_TEMPLATE)),
@@ -3266,6 +3292,23 @@
       renderQuickAccessList();
     }
 
+    function showLocalModeIfAvailable() {
+      const bootstrapEmail = getBootstrapLocalEmail();
+      if (!bootstrapEmail) return false;
+      const loadedAt = DB.load(bootstrapEmail);
+      const hasLocalData = countStateTransactions(State) > 0 || Boolean(State.profile?.email);
+      if (!loadedAt || !hasLocalData) return false;
+      showAuthShell(false);
+      refreshAppViews();
+      updateAllAvatars();
+      setSyncStatus(
+        'Modo local ativo.',
+        'warn',
+        `Dados locais carregados de ${bootstrapEmail}. Entre na conta quando houver internet para sincronizar com a nuvem.`
+      );
+      return true;
+    }
+
     function encodeQuickAccessSecret(value = '') {
       try {
         return btoa(unescape(encodeURIComponent(String(value))));
@@ -3838,7 +3881,8 @@
     const DB = {
       load: (email = null) => {
         try {
-          const storageKey = getLocalStateKey(email || 'guest');
+          const preferredEmail = email || getBootstrapLocalEmail() || 'guest';
+          const storageKey = getLocalStateKey(preferredEmail);
           const d = localStorage.getItem(storageKey) || (!email ? localStorage.getItem('golbuy_v6') : null);
           if(d) {
             const parsed = JSON.parse(d);
@@ -3865,14 +3909,16 @@
             };
 
             State.selectedAccountId = State.selectedAccountId || State.accounts[0].id;
+            if (State.profile?.email) setLastActiveEmail(State.profile.email);
           }
-          return getLocalStateUpdatedAt(email || 'guest');
+          return getLocalStateUpdatedAt(preferredEmail);
         } catch (error) {
           console.error('Falha ao carregar dados locais:', error);
-          localStorage.removeItem(getLocalStateKey(email || 'guest'));
-          localStorage.removeItem(getLocalStateMetaKey(email || 'guest'));
+          const preferredEmail = email || getBootstrapLocalEmail() || 'guest';
+          localStorage.removeItem(getLocalStateKey(preferredEmail));
+          localStorage.removeItem(getLocalStateMetaKey(preferredEmail));
           if (!email) localStorage.removeItem('golbuy_v6');
-          resetStateToDefaults({ email: email || '' });
+          resetStateToDefaults({ email: email || preferredEmail || '' });
           return null;
         }
       },
@@ -3881,6 +3927,7 @@
         try {
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
           setLocalStateUpdatedAt(updatedAt);
+          if (State.profile?.email) setLastActiveEmail(State.profile.email);
           if (!preserveUpdatedAt) {
             createAutoRecoverySnapshot('salvamento-local');
           }
@@ -3900,6 +3947,20 @@
       }
     };
 
+    function clearLegacyLocalAuthStorage() {
+      const keys = [
+        `sb-${SUPABASE_PROJECT_REF}-auth-token`,
+        `sb-${SUPABASE_PROJECT_REF}-code-verifier`
+      ];
+      keys.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (_) {
+          return;
+        }
+      });
+    }
+
     async function ensureSupabase() {
       if (cloudConnectionStale) {
         supabaseClient = null;
@@ -3912,9 +3973,10 @@
       }
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          storage: window.sessionStorage
         }
       });
       return supabaseClient;
@@ -3923,24 +3985,22 @@
     async function ensureActiveSupabase() {
       const client = await ensureSupabase();
       if (!client) return null;
-      if (currentSessionUser) {
-        try {
-          const { data, error } = await withTimeout(
-            client.auth.getSession(),
-            8000,
-            'Tempo limite ao reativar sessão.'
-          );
-          if (error) throw error;
-          if (data?.session?.user) {
-            currentSessionUser = data.session.user;
-            loadedSessionUserId = data.session.user.id;
-          }
-        } catch (error) {
-          console.warn('Falha ao reativar sessão:', error);
-          supabaseClient = null;
-          cloudConnectionStale = false;
-          return await ensureSupabase();
+      try {
+        const { data, error } = await withTimeout(
+          client.auth.getSession(),
+          8000,
+          'Tempo limite ao reativar sessão.'
+        );
+        if (error) throw error;
+        if (data?.session?.user) {
+          currentSessionUser = data.session.user;
+          loadedSessionUserId = data.session.user.id;
         }
+      } catch (error) {
+        console.warn('Falha ao reativar sessão:', error);
+        supabaseClient = null;
+        cloudConnectionStale = false;
+        return await ensureSupabase();
       }
       return client;
     }
@@ -3979,21 +4039,6 @@
 
     function isTrialEmail(email) {
       return /@trial\.controlefinanceiro\.app$/i.test(normalizeEmail(email));
-    }
-
-    function clearPersistedSupabaseSession() {
-      const keys = [
-        `sb-${SUPABASE_PROJECT_REF}-auth-token`,
-        `sb-${SUPABASE_PROJECT_REF}-code-verifier`
-      ];
-      keys.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-          sessionStorage.removeItem(key);
-        } catch (_) {
-          return;
-        }
-      });
     }
 
     async function checkFirstAccessCredential(client, email, password) {
@@ -4458,7 +4503,9 @@
       renderAccessSummary(null);
       renderSubscriptionSummary(null);
       resetVisibleStateForAccount(null, 'Sessão encerrada.');
-      showAuthShell(true);
+      if (!showLocalModeIfAvailable()) {
+        showAuthShell(true);
+      }
     }
 
     function queueCloudSave(delay = 800) {
@@ -4519,6 +4566,9 @@
       pendingAdminRefresh = false;
       lastAccessValidationAt = 0;
       setSyncStatus('Pronto para continuar.', 'ok', 'As próximas alterações serão sincronizadas após cada ação.');
+      if (navigator.onLine) {
+        syncCloudNow(true).catch(error => console.warn('Falha ao retomar sincronização:', error));
+      }
     }
 
     async function validateCurrentAccessStatus() {
@@ -4587,7 +4637,11 @@
     async function syncCloudNow(silent = false) {
       const client = await ensureActiveSupabase();
       if (!client || !currentSessionUser) {
-        if (!silent) setSyncStatus('Nuvem indisponível.', 'off', 'Entre na conta e confira sua conexão.');
+        if (!silent) {
+          setSyncStatus('Salvo neste aparelho. Nuvem indisponível.', 'warn', 'Entre na conta e confira sua conexão para enviar os dados locais.');
+          safeSetText('auth-status', 'Entre na conta para enviar seus dados locais para a nuvem.');
+          showToast('Sem sessão ativa na nuvem. Seus dados continuam salvos neste aparelho.', 'error');
+        }
         return false;
       }
       if (isCloudSyncRunning) {
@@ -4800,6 +4854,7 @@
         if (passwordChangeRequired) {
           openPasswordChangeModal();
         }
+        setLastActiveEmail(user.email);
         if (loadToken === sessionLoadToken) loadedSessionUserId = user.id;
         return true;
       } catch (error) {
@@ -4826,15 +4881,24 @@
     }
 
     async function initCloudAuth() {
-      clearPersistedSupabaseSession();
+      clearLegacyLocalAuthStorage();
       const client = await ensureSupabase();
       if (!client) {
         showAuthShell(false);
         return;
       }
-      showAuthShell(true);
+      const hasLocalMode = showLocalModeIfAvailable();
+      if (!hasLocalMode) {
+        showAuthShell(true);
+      }
       toggleAdminUi(false);
-      setSyncStatus('Entre para salvar seus dados na nuvem.', 'warn', 'O login automático foi desativado neste aparelho.');
+      setSyncStatus(
+        hasLocalMode ? 'Modo local disponível.' : 'Entre para salvar seus dados na nuvem.',
+        'warn',
+        hasLocalMode
+          ? 'As alterações continuam salvas neste aparelho e serão enviadas quando você entrar novamente.'
+          : 'O login automático foi desativado neste aparelho.'
+      );
       switchAuthMode('login');
 
       client.auth.onAuthStateChange(async (event, session) => {
@@ -4863,7 +4927,9 @@
           passwordChangeRequired = false;
           toggleAdminUi(false);
           resetVisibleStateForAccount(null, 'Sessão encerrada.');
-          showAuthShell(true);
+          if (!showLocalModeIfAvailable()) {
+            showAuthShell(true);
+          }
         }
       });
     }
@@ -7695,6 +7761,12 @@
 
       window.addEventListener('online', () => {
         cloudConnectionStale = true;
+        if (currentSessionUser && !accessLockActive) {
+          setSyncStatus('Internet restabelecida. Enviando alterações pendentes...', 'saving');
+          syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao voltar internet:', error));
+        } else if (showLocalModeIfAvailable()) {
+          setSyncStatus('Internet disponível. Entre na conta para sincronizar a nuvem.', 'warn');
+        }
         resumeForegroundWork();
       });
 
