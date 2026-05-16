@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPlan | Lote Fundador</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #05131c;
+      --bg-2: #0a1f2d;
+      --panel: #0d2230;
+      --panel-soft: #10293a;
+      --line: rgba(0, 180, 160, .16);
+      --text: #f4fbfd;
+      --muted: #9db7c3;
+      --brand: #17c7bb;
+      --brand-deep: #0d7f78;
+      --brand-soft: rgba(23, 199, 187, .14);
+      --gold: #d8c87c;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(23, 199, 187, .15), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(79, 124, 255, .12), transparent 30%),
+        linear-gradient(180deg, #061620 0%, var(--bg) 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    .wrap {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(5, 19, 28, .84);
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+
+    .topbar-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand img {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.28);
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .brand-copy span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--brand-soft);
+      color: #d4faf7;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 14px 22px;
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 15px;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 18px 38px rgba(23, 199, 187, .24);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.1);
+      color: var(--text);
+    }
+
+    .hero {
+      padding: 54px 0 34px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.04fr .96fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      border: 1px solid var(--line);
+      color: #d1faf5;
+      font-size: 13px;
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      max-width: 640px;
+      font-size: 56px;
+      line-height: .94;
+      letter-spacing: 0;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+
+    .hero p {
+      max-width: 620px;
+      margin-top: 20px;
+      color: #b3ccd6;
+      font-size: 19px;
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+      color: #c6dde5;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 40px 0 0;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 25% 10%, rgba(23, 199, 187, .18), transparent 28%),
+        linear-gradient(180deg, #0b2534 0%, #071824 100%);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .hero-main-shot {
+      position: relative;
+      z-index: 2;
+      width: min(100%, 380px);
+      border-radius: 28px;
+      box-shadow: 0 36px 76px rgba(0, 0, 0, .4);
+      overflow: hidden;
+    }
+
+    .hero-side-shot {
+      position: absolute;
+      z-index: 1;
+      width: 240px;
+      right: 8px;
+      bottom: 26px;
+      opacity: .72;
+      transform: rotate(-8deg);
+      border-radius: 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, .36);
+      overflow: hidden;
+    }
+
+    section {
+      padding: 38px 0;
+    }
+
+    .section-head {
+      margin-bottom: 24px;
+    }
+
+    .section-head h2 {
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .section-head p {
+      margin-top: 10px;
+      max-width: 700px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.5;
+    }
+
+    .bands {
+      display: grid;
+      gap: 14px;
+    }
+
+    .band {
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(11, 31, 44, .66);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .band-num {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: var(--brand-soft);
+      color: #8ff1e7;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .band-copy strong {
+      display: block;
+      font-size: 21px;
+      line-height: 1.1;
+    }
+
+    .band-copy p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .plan {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 16px;
+      padding: 24px;
+      border-radius: 28px;
+      background: rgba(11, 31, 44, .82);
+      border: 1px solid rgba(255,255,255,.06);
+      min-height: 420px;
+    }
+
+    .plan.featured {
+      background:
+        radial-gradient(circle at top left, rgba(23, 199, 187, .12), transparent 36%),
+        linear-gradient(180deg, #113141 0%, #0b2230 100%);
+      border-color: rgba(23, 199, 187, .3);
+      box-shadow: 0 24px 56px rgba(23, 199, 187, .12);
+    }
+
+    .plan-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .plan-top strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .badge {
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(216, 200, 124, .16);
+      color: #f1e9b5;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .plan p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .price {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .price b {
+      font-size: 52px;
+      line-height: .9;
+      font-weight: 900;
+    }
+
+    .price span {
+      color: var(--muted);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .plan ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      color: #d3e8ee;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .plan li::before {
+      content: "•";
+      color: var(--brand);
+      font-weight: 900;
+      margin-right: 8px;
+    }
+
+    .proof {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .media-panel,
+    .faq,
+    .notice {
+      padding: 22px;
+      border-radius: 26px;
+      background: rgba(11, 31, 44, .72);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .media-panel img {
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 24px 54px rgba(0,0,0,.28);
+    }
+
+    .media-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .faq {
+      display: grid;
+      gap: 14px;
+    }
+
+    .faq-item strong {
+      display: block;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .faq-item p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .notice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .notice strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .notice p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .cta-band {
+      padding: 28px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(23, 199, 187, .16), transparent 30%),
+        linear-gradient(180deg, #0f2c3b 0%, #0a1f2d 100%);
+      border: 1px solid rgba(23, 199, 187, .16);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .cta-band strong {
+      font-size: 28px;
+      line-height: 1.02;
+    }
+
+    .cta-band p {
+      margin-top: 8px;
+      max-width: 620px;
+      color: #c0d9e2;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    footer {
+      padding: 24px 0 48px;
+      color: #8fa9b4;
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .proof,
+      .notice-grid,
+      .pricing {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        min-height: 560px;
+        order: -1;
+      }
+
+      .hero-main-shot {
+        width: min(100%, 360px);
+      }
+
+      .hero-side-shot {
+        width: 220px;
+        right: 20px;
+        bottom: 8px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap {
+        width: min(100% - 20px, 1120px);
+      }
+
+      .topbar-inner {
+        min-height: 68px;
+      }
+
+      .top-actions {
+        display: none;
+      }
+
+      .hero {
+        padding-top: 28px;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+
+      .hero-visual {
+        min-height: 480px;
+      }
+
+      .hero-bg {
+        inset: 20px 0 0;
+      }
+
+      .hero-side-shot {
+        width: 176px;
+        right: 0;
+        bottom: 10px;
+      }
+
+      .section-head h2 {
+        font-size: 28px;
+      }
+
+      .band {
+        grid-template-columns: 58px 1fr;
+        padding: 18px;
+      }
+
+      .band-num {
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        font-size: 20px;
+      }
+
+      .plan {
+        min-height: auto;
+      }
+
+      .price b {
+        font-size: 44px;
+      }
+
+      .cta-band strong {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <img src="logo-192.png" alt="Logo GPlan">
+        <div class="brand-copy">
+          <strong>GPlan</strong>
+          <span>Planejamento financeiro pessoal</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="chip">Lote Fundador</div>
+        <a class="btn btn-primary" href="#planos">Escolher meu plano</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="eyebrow">Oferta de lançamento</div>
+          <h1>GPlan</h1>
+          <p>Organize receitas, despesas, pagamentos, metas e rendimento mensal em um app simples, visual e direto ao ponto, pensado para uso no celular.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#planos">Garantir acesso fundador</a>
+            <a class="btn btn-secondary" href="#como-funciona">Ver como funciona</a>
+          </div>
+          <div class="hero-meta">
+            <span>Acesso individual</span>
+            <span>Planos mensal, semestral e anual</span>
+            <span>Suporte inicial no lançamento</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-bg"></div>
+          <img class="hero-main-shot" src="flyer_gplan_divulgacao.png" alt="">
+          <img class="hero-side-shot" src="flyer_gplan_precos.png" alt="">
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>O que o GPlan entrega</h2>
+          <p>Uma estrutura prática para acompanhar seu mês sem depender de planilhas complicadas.</p>
+        </div>
+        <div class="bands">
+          <article class="band">
+            <div class="band-num">01</div>
+            <div class="band-copy">
+              <strong>Painel mensal claro</strong>
+              <p>Veja saldo, receitas, despesas e sobra do mês em uma tela limpa e fácil de entender.</p>
+            </div>
+          </article>
+          <article class="band">
+            <div class="band-num">02</div>
+            <div class="band-copy">
+              <strong>Controle por mês e status</strong>
+              <p>Organize pagos, pendentes, recebidos e a receber, com filtro por mês para analisar melhor cada período.</p>
+            </div>
+          </article>
+          <article class="band">
+            <div class="band-num">03</div>
+            <div class="band-copy">
+              <strong>Metas, calendário e relatórios</strong>
+              <p>Acompanhe objetivos financeiros, compromissos do mês e relatórios de receitas, despesas e rendimento.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="planos">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Planos de lançamento</h2>
+          <p>Oferta simbólica para os primeiros clientes. O valor pode mudar nas próximas fases do aplicativo.</p>
+        </div>
+        <div class="pricing">
+          <article class="plan">
+            <div class="plan-top">
+              <strong>Mensal</strong>
+            </div>
+            <p>Ideal para quem quer começar pagando pouco.</p>
+            <div class="price">
+              <b>R$ 9,90</b>
+              <span>/mês</span>
+            </div>
+            <ul>
+              <li>Acesso individual ao GPlan</li>
+              <li>Painel, controle, metas e relatórios</li>
+              <li>Uso no celular e computador</li>
+            </ul>
+            <a class="btn btn-secondary" href="#">Comprar plano mensal</a>
+          </article>
+
+          <article class="plan">
+            <div class="plan-top">
+              <strong>Semestral</strong>
+            </div>
+            <p>Bom equilíbrio para quem quer constância sem pagar mês a mês.</p>
+            <div class="price">
+              <b>R$ 49,90</b>
+              <span>/6 meses</span>
+            </div>
+            <ul>
+              <li>Mesmo acesso completo do plano mensal</li>
+              <li>Melhor custo para uso contínuo</li>
+              <li>Mais previsibilidade para manter a rotina</li>
+            </ul>
+            <a class="btn btn-secondary" href="#">Comprar plano semestral</a>
+          </article>
+
+          <article class="plan featured">
+            <div class="plan-top">
+              <strong>Anual</strong>
+              <span class="badge">Mais vantajoso</span>
+            </div>
+            <p>Melhor oferta do Lote Fundador para quem quer entrar já com o menor custo mensal.</p>
+            <div class="price">
+              <b>R$ 89,90</b>
+              <span>/ano</span>
+            </div>
+            <ul>
+              <li>Equivale a R$ 7,49 por mês</li>
+              <li>Acesso completo ao GPlan</li>
+              <li>Plano mais indicado para lançamento</li>
+            </ul>
+            <a class="btn btn-primary" href="#">Comprar plano anual</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap proof">
+        <div class="media-panel">
+          <div class="section-head">
+            <h2>Visual real do produto</h2>
+            <p>Você já pode usar estes materiais nas suas páginas, no WhatsApp e nas plataformas de venda.</p>
+          </div>
+          <img src="flyer_gplan_divulgacao.png" alt="Divulgação do GPlan">
+          <div class="media-links">
+            <a class="btn btn-secondary" href="flyer_gplan_precos.png">Abrir flyer de preços</a>
+            <a class="btn btn-secondary" href="video_divulgacao_gplan.html">Abrir vídeo demonstrativo</a>
+          </div>
+        </div>
+
+        <div class="faq">
+          <div class="section-head">
+            <h2>Perguntas frequentes</h2>
+          </div>
+          <div class="faq-item">
+            <strong>Preciso instalar alguma coisa?</strong>
+            <p>Não necessariamente. O GPlan pode ser acessado pelo navegador e, em aparelhos compatíveis, pode ser instalado como aplicativo web.</p>
+          </div>
+          <div class="faq-item">
+            <strong>O acesso é individual?</strong>
+            <p>Sim. Cada compra libera um acesso individual com login e senha.</p>
+          </div>
+          <div class="faq-item">
+            <strong>Como recebo meu acesso?</strong>
+            <p>No início, a liberação pode ser manual após a confirmação da compra, com envio de acesso e senha temporária.</p>
+          </div>
+          <div class="faq-item">
+            <strong>O app conecta automaticamente ao banco?</strong>
+            <p>Não. Nesta fase, os lançamentos são cadastrados manualmente pelo próprio usuário.</p>
+          </div>
+          <div class="faq-item">
+            <strong>Serve para empresa?</strong>
+            <p>O foco atual é organização financeira pessoal. Ele não substitui ERP, sistema contábil ou consultoria profissional.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap notice-grid">
+        <article class="notice">
+          <strong>Importante para o cliente</strong>
+          <p>O GPlan é uma ferramenta de organização financeira pessoal. Ele não substitui orientação contábil, jurídica, consultoria financeira ou recomendação de investimentos.</p>
+        </article>
+        <article class="notice">
+          <strong>Lote Fundador</strong>
+          <p>Esta é uma oferta de lançamento para os primeiros usuários. O preço atual é promocional e pode ser reajustado em uma fase posterior.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="cta-band">
+          <div>
+            <strong>Pronto para publicar e vender</strong>
+            <p>Agora você já tem o nome, os planos, os flyers, o vídeo demonstrativo e a página oficial de oferta para usar no seu lançamento.</p>
+          </div>
+          <a class="btn btn-primary" href="#planos">Escolher meu plano</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div>GPlan - Planejamento financeiro pessoal</div>
+      <div class="footer-links">
+        <a href="politica_privacidade_gplan.html">Política de Privacidade</a>
+        <a href="termos_uso_gplan.html">Termos de Uso</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

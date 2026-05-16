@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPlan Divulgação Story</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: Inter, Arial, sans-serif;
+      color: #f7fcfe;
+      background:
+        radial-gradient(circle at top right, rgba(0, 212, 184, .18), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(91, 128, 255, .22), transparent 34%),
+        linear-gradient(180deg, #041019 0%, #02070d 100%);
+      display: grid;
+      place-items: center;
+    }
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+    .story {
+      width: 1080px;
+      height: 1920px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(0, 212, 184, .14), transparent 30%),
+        radial-gradient(circle at 82% 84%, rgba(91, 128, 255, .18), transparent 34%),
+        linear-gradient(180deg, #0b2636 0%, #071824 58%, #041019 100%);
+      padding: 68px;
+      transform-origin: top left;
+      will-change: transform;
+    }
+    .story::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.024) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.024) 1px, transparent 1px);
+      background-size: 42px 42px;
+      opacity: .22;
+      pointer-events: none;
+    }
+    .top,
+    .hero,
+    .benefits,
+    .device-stack,
+    .bottom { position: relative; z-index: 2; }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo-wrap {
+      width: 108px;
+      height: 108px;
+      border-radius: 30px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(0, 180, 160, .16), transparent 44%),
+        linear-gradient(180deg, #151c28 0%, #07101b 100%);
+      border: 1px solid rgba(0, 180, 160, .24);
+      box-shadow: 0 20px 40px rgba(0,0,0,.26);
+    }
+    .gplan-mark {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      font-size: 82px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0;
+      background: linear-gradient(180deg, #8bf4b8 0%, #6ad0de 52%, #5e80ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 14px 28px rgba(79, 124, 255, .18);
+    }
+    .brand-copy strong {
+      display: block;
+      font-size: 52px;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .brand-copy span {
+      display: block;
+      margin-top: 10px;
+      color: #97b8c5;
+      font-size: 24px;
+    }
+    .chip {
+      padding: 16px 24px;
+      border-radius: 999px;
+      background: rgba(0, 180, 160, .12);
+      border: 1px solid rgba(0, 180, 160, .22);
+      color: #c9fbf5;
+      font-size: 22px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .hero {
+      margin-top: 58px;
+    }
+    .hero h1 {
+      font-size: 96px;
+      line-height: .95;
+      font-weight: 900;
+      max-width: 760px;
+      text-wrap: balance;
+    }
+    .hero p {
+      margin-top: 24px;
+      max-width: 720px;
+      color: #b2d3de;
+      font-size: 32px;
+      line-height: 1.42;
+    }
+    .benefits {
+      margin-top: 34px;
+      display: grid;
+      gap: 16px;
+      max-width: 620px;
+    }
+    .benefit {
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 14px;
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: rgba(8, 24, 34, .74);
+      border: 1px solid rgba(0, 180, 160, .10);
+      backdrop-filter: blur(8px);
+    }
+    .benefit-index {
+      width: 62px;
+      height: 62px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 180, 160, .12);
+      color: #7fe6d7;
+      font-size: 22px;
+      font-weight: 900;
+    }
+    .benefit-copy strong {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .benefit-copy span {
+      display: block;
+      margin-top: 8px;
+      font-size: 22px;
+      line-height: 1.4;
+      color: #a6c7d3;
+    }
+    .device-stack {
+      position: absolute;
+      right: 42px;
+      bottom: 270px;
+      width: 420px;
+      height: 760px;
+    }
+    .glow {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(0, 212, 184, .24), transparent 68%);
+      filter: blur(12px);
+      top: 120px;
+      left: 10px;
+    }
+    .phone {
+      position: absolute;
+      width: 300px;
+      aspect-ratio: 9 / 18.7;
+      border-radius: 42px;
+      padding: 14px;
+      background: linear-gradient(180deg, #111927 0%, #050c14 100%);
+      box-shadow: 0 30px 70px rgba(0,0,0,.52);
+    }
+    .phone.back {
+      transform: rotate(-11deg) translate(-56px, 44px) scale(.9);
+      opacity: .72;
+    }
+    .phone.front {
+      transform: rotate(8deg) translate(94px, 8px);
+      z-index: 2;
+    }
+    .phone::before {
+      content: "";
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 34%;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.64);
+      z-index: 3;
+    }
+    .screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #0d1f2d 0%, #081822 100%);
+      border: 1px solid rgba(255,255,255,.04);
+      padding: 22px 16px 16px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 12px;
+    }
+    .app-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .menu,
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: #132a3c;
+      color: #d7eef2;
+      font-weight: 800;
+    }
+    .heading strong {
+      display: block;
+      font-size: 17px;
+      font-weight: 800;
+    }
+    .heading span {
+      display: block;
+      margin-top: 4px;
+      color: #7f9eab;
+      font-size: 12px;
+    }
+    .summary {
+      border-radius: 22px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(0, 180, 160, .18), rgba(19, 42, 60, .92));
+      border: 1px solid rgba(0, 180, 160, .20);
+    }
+    .summary small {
+      color: #c8faf4;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .summary strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 31px;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .mini-card {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(19, 42, 60, .92);
+      border: 1px solid rgba(0, 180, 160, .08);
+    }
+    .mini-card span {
+      display: block;
+      color: #7e9eab;
+      font-size: 11px;
+    }
+    .mini-card strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(19, 42, 60, .92);
+      border: 1px solid rgba(0, 180, 160, .06);
+    }
+    .row-title strong {
+      display: block;
+      font-size: 13px;
+    }
+    .row-title span {
+      display: block;
+      margin-top: 4px;
+      color: #7f9eab;
+      font-size: 11px;
+    }
+    .row-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(0, 180, 160, .12);
+      color: #c8faf4;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .nav {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      text-align: center;
+      font-size: 10px;
+      color: #7897a3;
+    }
+    .nav .active {
+      color: #fff;
+      font-weight: 800;
+    }
+    .bottom {
+      position: absolute;
+      left: 68px;
+      right: 68px;
+      bottom: 72px;
+      z-index: 2;
+      display: grid;
+      gap: 18px;
+    }
+    .bottom-note {
+      color: #98b6c4;
+      font-size: 24px;
+      line-height: 1.45;
+      text-align: center;
+    }
+    .cta {
+      min-height: 110px;
+      border-radius: 30px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #00d0b5 0%, #00b4a0 100%);
+      color: #fff;
+      font-size: 34px;
+      font-weight: 900;
+      text-align: center;
+      box-shadow: 0 24px 52px rgba(0, 180, 160, .30);
+    }
+  </style>
+</head>
+<body>
+  <div class="viewport">
+  <main id="story-canvas" class="story" aria-label="Story de divulgação do GPlan">
+    <section class="top">
+      <div class="brand">
+        <div class="logo-wrap" aria-hidden="true"><span class="gplan-mark">G</span></div>
+        <div class="brand-copy">
+          <strong>GPlan</strong>
+          <span>Planejamento financeiro pessoal</span>
+        </div>
+      </div>
+      <div class="chip">Novo app</div>
+    </section>
+
+    <section class="hero">
+      <h1>Seu dinheiro mais organizado em um só lugar</h1>
+      <p>Controle receitas, despesas, pagamentos, metas e relatórios com um app visual, direto e pensado para uso no celular.</p>
+    </section>
+
+    <section class="benefits">
+      <div class="benefit">
+        <div class="benefit-index">01</div>
+        <div class="benefit-copy">
+          <strong>Painel mensal claro</strong>
+          <span>Saldo, receitas, despesas e sobra do mês em poucos segundos.</span>
+        </div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-index">02</div>
+        <div class="benefit-copy">
+          <strong>Controle por mês e status</strong>
+          <span>Pagos, pendentes, recebidos e a pagar com mais organização.</span>
+        </div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-index">03</div>
+        <div class="benefit-copy">
+          <strong>Metas e relatórios</strong>
+          <span>Objetivos financeiros, calendário e rendimento mensal e geral.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="device-stack">
+      <div class="glow"></div>
+
+      <div class="phone back">
+        <div class="screen">
+          <div class="app-top">
+            <div class="menu">&#9776;</div>
+            <div class="heading">
+              <strong>Metas</strong>
+              <span>Objetivos financeiros</span>
+            </div>
+            <div class="avatar">GP</div>
+          </div>
+          <div class="summary">
+            <small>Reserva de emergência</small>
+            <strong>64%</strong>
+          </div>
+          <div class="list">
+            <div class="row">
+              <div class="row-title">
+                <strong>Viagem</strong>
+                <span>Meta em andamento</span>
+              </div>
+              <div class="row-pill">60%</div>
+            </div>
+            <div class="row">
+              <div class="row-title">
+                <strong>Investimentos</strong>
+                <span>Meta mensal</span>
+              </div>
+              <div class="row-pill">82%</div>
+            </div>
+          </div>
+          <div class="nav">
+            <div>Painel</div>
+            <div>Controle</div>
+            <div>Trans.</div>
+            <div>Cal.</div>
+            <div class="active">Metas</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone front">
+        <div class="screen">
+          <div class="app-top">
+            <div class="menu">&#9776;</div>
+            <div class="heading">
+              <strong>Painel Financeiro</strong>
+              <span>Resumo do mês</span>
+            </div>
+            <div class="avatar">GP</div>
+          </div>
+          <div class="summary">
+            <small>Sobra do mês</small>
+            <strong>R$ 2.450</strong>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <span>Receitas</span>
+              <strong style="color:#00c853">R$ 5.800</strong>
+            </div>
+            <div class="mini-card">
+              <span>Despesas</span>
+              <strong style="color:#ff5252">R$ 3.350</strong>
+            </div>
+          </div>
+          <div class="list">
+            <div class="row">
+              <div class="row-title">
+                <strong>Controle mensal</strong>
+                <span>Filtro por mês</span>
+              </div>
+              <div class="row-pill">Maio</div>
+            </div>
+            <div class="row">
+              <div class="row-title">
+                <strong>Relatórios</strong>
+                <span>Rendimento mensal e geral</span>
+              </div>
+              <div class="row-pill">Claros</div>
+            </div>
+            <div class="row">
+              <div class="row-title">
+                <strong>Sincronização</strong>
+                <span>Status visível ao cliente</span>
+              </div>
+              <div class="row-pill">Ativa</div>
+            </div>
+          </div>
+          <div class="nav">
+            <div class="active">Painel</div>
+            <div>Controle</div>
+            <div>Trans.</div>
+            <div>Cal.</div>
+            <div>Perfil</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bottom">
+      <div class="bottom-note">Conheça o GPlan e comece a acompanhar sua rotina financeira com mais clareza.</div>
+      <div class="cta">Quero conhecer o GPlan</div>
+    </section>
+  </main>
+  </div>
+  <script>
+    (function () {
+      const baseWidth = 1080;
+      const baseHeight = 1920;
+      const story = document.getElementById('story-canvas');
+      const fit = () => {
+        const scale = Math.min(window.innerWidth / baseWidth, window.innerHeight / baseHeight);
+        story.style.transform = `scale(${scale})`;
+      };
+      fit();
+      window.addEventListener('resize', fit);
+      window.addEventListener('orientationchange', fit);
+    })();
+  </script>
+</body>
+</html>
