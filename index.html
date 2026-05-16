@@ -2668,7 +2668,27 @@
     };
     const getBootstrapLocalEmail = () => {
       const candidate = getLastActiveEmail();
-      if (!candidate) return '';
+      if (!candidate) {
+        try {
+          for (let i = 0; i < localStorage.length; i += 1) {
+            const key = localStorage.key(i) || '';
+            if (!key.startsWith(`${LOCAL_STATE_PREFIX}:`) || key.endsWith(':meta')) continue;
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const parsed = JSON.parse(raw);
+            const payload = extractStatePayload(parsed);
+            if (!hasRecoverableState(payload)) continue;
+            const email = normalizeEmail(payload?.profile?.email || parsed?.email || key.split(':').pop() || '');
+            if (email && email !== 'guest') {
+              setLastActiveEmail(email);
+              return email;
+            }
+          }
+        } catch (_) {
+          return '';
+        }
+        return '';
+      }
       try {
         return localStorage.getItem(getLocalStateKey(candidate)) ? candidate : '';
       } catch (_) {
@@ -3297,14 +3317,15 @@
       if (!bootstrapEmail) return false;
       const loadedAt = DB.load(bootstrapEmail);
       const hasLocalData = countStateTransactions(State) > 0 || Boolean(State.profile?.email);
-      if (!loadedAt || !hasLocalData) return false;
+      if (!hasLocalData) return false;
+      setLastActiveEmail(State.profile?.email || bootstrapEmail);
       showAuthShell(false);
       refreshAppViews();
       updateAllAvatars();
       setSyncStatus(
         'Modo local ativo.',
         'warn',
-        `Dados locais carregados de ${bootstrapEmail}. Entre na conta quando houver internet para sincronizar com a nuvem.`
+        `Dados locais carregados de ${bootstrapEmail}. ${loadedAt ? 'Último salvamento local reconhecido.' : 'Backup local reconhecido mesmo sem carimbo de data.'} Entre na conta quando houver internet para sincronizar com a nuvem.`
       );
       return true;
     }
@@ -3910,6 +3931,15 @@
 
             State.selectedAccountId = State.selectedAccountId || State.accounts[0].id;
             if (State.profile?.email) setLastActiveEmail(State.profile.email);
+            const inferredUpdatedAt =
+              getLocalStateUpdatedAt(preferredEmail) ||
+              parsed?.updated_at ||
+              parsed?.created_at ||
+              null;
+            if (inferredUpdatedAt) {
+              setLocalStateUpdatedAt(inferredUpdatedAt, preferredEmail);
+            }
+            return inferredUpdatedAt;
           }
           return getLocalStateUpdatedAt(preferredEmail);
         } catch (error) {
@@ -7730,7 +7760,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       DB.load();
       installEncodingRepairObserver();
-      showAuthShell(true);
+      const hasBootLocalMode = showLocalModeIfAvailable();
+      showAuthShell(!hasBootLocalMode);
       
       // Sincroniza inputs de data com estado
       initTxDatePicker();
