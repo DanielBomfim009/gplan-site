@@ -2660,6 +2660,10 @@
     const setCloudSyncedAt = (syncedAt, email = currentSessionUser?.email || State.profile.email || 'guest') => {
       setLocalStateMeta({ cloud_synced_at: syncedAt }, email);
     };
+    const hasPendingCloudSync = (email = currentSessionUser?.email || State.profile.email || 'guest') => Boolean(getLocalStateMeta(email).cloud_pending);
+    const setPendingCloudSync = (pending, email = currentSessionUser?.email || State.profile.email || 'guest') => {
+      setLocalStateMeta({ cloud_pending: Boolean(pending), cloud_pending_at: pending ? new Date().toISOString() : null }, email);
+    };
     const getLastActiveEmail = () => {
       try {
         return normalizeEmail(localStorage.getItem(LAST_ACTIVE_EMAIL_KEY) || '');
@@ -3997,6 +4001,9 @@
           localStorage.setItem(getLocalStateKey(), JSON.stringify(sanitizeStateForCloud()));
           setLocalStateUpdatedAt(updatedAt);
           if (State.profile?.email) setLastActiveEmail(State.profile.email);
+          if (!skipCloud && State.profile?.email) {
+            setPendingCloudSync(true, State.profile.email);
+          }
           if (!preserveUpdatedAt) {
             createAutoRecoverySnapshot('salvamento-local');
           }
@@ -4005,7 +4012,7 @@
               setSyncStatus('Salvo no aparelho. Enviando para a nuvem...', 'saving', `Última alteração local: ${new Date(updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`);
               notifyCloudSyncQueued();
             } else {
-              setSyncStatus('Salvo neste aparelho.', 'warn', 'Entre na conta para manter backup na nuvem.');
+              setSyncStatus('Salvo neste aparelho.', 'warn', 'Suas alterações ficaram guardadas localmente e serão enviadas quando você entrar com internet.');
             }
           }
         } catch (error) {
@@ -4762,6 +4769,7 @@
         if (error) throw error;
         setLocalStateUpdatedAt(payload.updated_at);
         setCloudSyncedAt(payload.updated_at);
+        setPendingCloudSync(false, currentSessionUser.email);
         const protectedRestore = getProtectedRestoreState(currentSessionUser.email);
         if (!protectedRestore || countStateTransactions(payload.app_state) >= protectedRestore.count) {
           clearProtectedRestoreState(currentSessionUser.email);
@@ -4834,10 +4842,15 @@
         const localUpdatedAt = DB.load(user.email);
         applyManagedIdentityToState();
         const localTransactionCount = countStateTransactions(State);
+        const localPendingSync = hasPendingCloudSync(user.email);
         showAuthShell(false);
         refreshAppViews();
         updateAllAvatars();
-        setSyncStatus('Dados locais carregados. Atualizando nuvem...', 'warn');
+        setSyncStatus(
+          localPendingSync ? 'Dados locais carregados. Retomando sincronização...' : 'Dados locais carregados. Atualizando nuvem...',
+          'warn',
+          localPendingSync ? 'Encontramos alterações pendentes salvas neste aparelho.' : ''
+        );
         const { data, error } = await client
           .from(SUPABASE_STATE_TABLE)
           .select('app_state, updated_at')
@@ -4916,6 +4929,9 @@
           DB.save({ skipCloud: true });
           queueCloudSave(1000);
           setSyncStatus('Conta pronta. Salvando primeira sincronização...', 'warn');
+        }
+        if (localPendingSync) {
+          queueCloudSave(300);
         }
         startAutoSync();
         if (isAdminRole(currentAccessProfile?.role)) {
@@ -7832,7 +7848,7 @@
         cloudConnectionStale = true;
         updateAuthConnectivityState();
         if (currentSessionUser && !accessLockActive) {
-          setSyncStatus('Internet restabelecida. Enviando alterações pendentes...', 'saving');
+          setSyncStatus('Internet restabelecida. Enviando alterações pendentes...', 'saving', 'Os dados salvos localmente serão sincronizados automaticamente.');
           syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao voltar internet:', error));
         } else if (!document.getElementById('app')?.classList.contains('hidden')) {
           setSyncStatus('Internet disponível. Entre na conta para sincronizar a nuvem.', 'warn');
@@ -7843,7 +7859,10 @@
       window.addEventListener('offline', () => {
         pauseBackgroundWork();
         updateAuthConnectivityState();
-        setSyncStatus('Sem internet. As alterações locais ficam salvas neste aparelho.', 'warn');
+        if (State.profile?.email) {
+          setPendingCloudSync(true, State.profile.email);
+        }
+        setSyncStatus('Sem internet. As alterações locais ficam salvas neste aparelho.', 'warn', 'Nada será perdido. Quando a conexão voltar, a sincronização será retomada automaticamente.');
       });
 
       document.addEventListener('visibilitychange', () => {
