@@ -1,29 +1,29 @@
-const VERSION = 'v52';
-const CACHE_NAME = `controle-financeiro-${VERSION}`;
+const VERSION = 'v53-site';
+const CACHE_NAME = `gplan-site-${VERSION}`;
+
 const CORE_ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './politica_privacidade_gplan.html',
+  './termos_uso_gplan.html'
 ];
 
 const OPTIONAL_ASSETS = [
   './logo-192.png',
-  './logo-512.png'
-];
-
-const EXTERNAL_ASSETS = [
-  'https://cdn.tailwindcss.com/',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap'
+  './logo-512.png',
+  './flyer_gplan_precos.png',
+  './flyer_gplan_divulgacao.png',
+  './video_divulgacao_gplan.html'
 ];
 
 async function cacheMany(cache, urls) {
   await Promise.allSettled(
     urls.map(async (url) => {
       try {
-        const request = new Request(url, { cache: 'no-cache', mode: 'no-cors' });
+        const request = new Request(url, { cache: 'no-cache' });
         const response = await fetch(request);
-        if (response) {
+        if (response && response.ok) {
           await cache.put(request, response.clone());
         }
       } catch (_) {
@@ -51,7 +51,6 @@ self.addEventListener('install', (event) => {
       const cache = await caches.open(CACHE_NAME);
       await cacheCoreAssets(cache);
       await cacheMany(cache, OPTIONAL_ASSETS);
-      await cacheMany(cache, EXTERNAL_ASSETS);
       await self.skipWaiting();
     })()
   );
@@ -106,20 +105,18 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   const isSameOrigin = url.origin === self.location.origin;
   const isDocument = request.mode === 'navigate';
-  const isStyleLike =
+  const isAssetLike =
     request.destination === 'style' ||
     request.destination === 'script' ||
     request.destination === 'font' ||
-    request.url.includes('fonts.googleapis.com') ||
-    request.url.includes('fonts.gstatic.com') ||
-    request.url.includes('cdn.tailwindcss.com');
+    request.destination === 'image';
 
   if (isDocument) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  if (isSameOrigin || isStyleLike) {
+  if (isSameOrigin || isAssetLike) {
     event.respondWith(staleWhileRevalidate(request));
   }
 });

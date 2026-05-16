@@ -1,16 +1,16 @@
 {
-  "name": "Controle Financeiro",
-  "short_name": "Controle",
-  "version": "4.2",
-  "description": "Painel financeiro inteligente com controle de pagamentos, receitas, despesas, valores a receber e valores a pagar",
+  "name": "GPlan - Site Oficial",
+  "short_name": "GPlan",
+  "version": "1.0",
+  "description": "Site oficial do GPlan com planos, materiais de divulgacao e acesso ao aplicativo",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0d1f2d",
-  "theme_color": "#00b4a0",
+  "background_color": "#08151e",
+  "theme_color": "#17c7bb",
   "orientation": "portrait-primary",
   "scope": "./",
   "lang": "pt-BR",
-  "categories": ["finance", "productivity", "utilities"],
+  "categories": ["finance", "business", "productivity"],
   "icons": [
     {
       "src": "logo-192.png",
@@ -25,21 +25,20 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
   "prefer_related_applications": false,
   "related_applications": [],
   "shortcuts": [
     {
-      "name": "Nova transação",
-      "short_name": "Nova",
-      "description": "Adicionar uma nova transação",
-      "url": "./index.html?action=new"
+      "name": "Ver planos",
+      "short_name": "Planos",
+      "description": "Abrir a secao de planos do GPlan",
+      "url": "./index.html#planos"
     },
     {
-      "name": "Controle de pagamentos",
-      "short_name": "Controle",
-      "description": "Gerenciar pagamentos pendentes",
-      "url": "./index.html?page=control"
+      "name": "Acessar o app",
+      "short_name": "App",
+      "description": "Abrir o acesso do aplicativo GPlan",
+      "url": "https://app.gplanapp.com.br/"
     }
   ]
 }
