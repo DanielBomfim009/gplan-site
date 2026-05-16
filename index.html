@@ -711,6 +711,10 @@
     .auth-tab { border: none; border-radius: 10px; background: transparent; color: #6b8a99; padding: 10px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .auth-tab.active { background: rgba(0, 180, 160, 0.15); color: #00b4a0; }
     .auth-panel { padding: 18px; border-radius: 18px; background: rgba(13, 31, 45, 0.72); border: 1px solid rgba(0, 180, 160, 0.08); }
+    .auth-offline-card { margin-bottom: 14px; padding: 14px; border-radius: 16px; background: rgba(255, 179, 0, 0.08); border: 1px solid rgba(255, 179, 0, 0.18); color: #f7d37a; display: none; }
+    .auth-offline-card.active { display: block; }
+    .auth-offline-title { font-size: 13px; font-weight: 700; color: #ffe7a8; }
+    .auth-offline-copy { margin-top: 6px; font-size: 12px; line-height: 1.5; color: #d7c38f; }
     .auth-quick-card { margin-top: 14px; padding: 14px; border-radius: 16px; background: linear-gradient(145deg, rgba(0, 180, 160, 0.08), rgba(7, 18, 28, 0.58)); border: 1px solid rgba(0, 180, 160, 0.14); }
     .auth-quick-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .auth-quick-title { color: #ffffff; font-size: 13px; font-weight: 900; line-height: 1.2; }
@@ -942,6 +946,11 @@
       <div class="auth-panel">
         <div class="auth-tabs hidden">
           <button id="auth-tab-login" class="auth-tab active" onclick="switchAuthMode('login')">Entrar</button>
+        </div>
+
+        <div id="auth-offline-card" class="auth-offline-card">
+          <div class="auth-offline-title">Internet necessária</div>
+          <div class="auth-offline-copy">Conecte seu aparelho à internet para entrar no aplicativo e sincronizar seus dados com segurança.</div>
         </div>
 
         <form id="auth-form" class="space-y-4" onsubmit="submitAuth(event)">
@@ -3310,57 +3319,32 @@
       renderQuickAccessList();
     }
 
+    function updateAuthConnectivityState() {
+      const offline = !navigator.onLine;
+      document.getElementById('auth-offline-card')?.classList.toggle('active', offline);
+      document.getElementById('auth-email')?.toggleAttribute('disabled', offline);
+      document.getElementById('auth-password')?.toggleAttribute('disabled', offline);
+      document.getElementById('auth-submit-btn')?.toggleAttribute('disabled', offline);
+      const submitBtn = document.getElementById('auth-submit-btn');
+      if (submitBtn) {
+        submitBtn.style.opacity = offline ? '0.6' : '1';
+        submitBtn.style.cursor = offline ? 'not-allowed' : 'pointer';
+      }
+      if (offline) {
+        safeSetText('auth-status', 'Sem internet no momento. Conecte-se para entrar.');
+      } else {
+        safeSetText('auth-status', 'Entre com o e-mail liberado pelo suporte e a senha temporária recebida.');
+      }
+    }
+
     function openLoginScreen(statusText = 'Entre com sua conta para carregar os dados da nuvem.') {
       accessLockActive = false;
       document.getElementById('access-lock-shell')?.classList.add('hidden');
       showAuthShell(true);
       switchAuthMode('login');
-      safeSetText('auth-status', statusText);
+      safeSetText('auth-status', !navigator.onLine ? 'Sem internet no momento. Conecte-se para entrar.' : statusText);
+      updateAuthConnectivityState();
       setTimeout(() => document.getElementById('auth-email')?.focus(), 80);
-    }
-
-    function findQuickAccessEntry(email = '', password = '') {
-      const normalizedEmail = normalizeEmail(email);
-      if (!normalizedEmail || !password) return null;
-      return getQuickAccessEntries().find(entry =>
-        normalizeEmail(entry.email) === normalizedEmail &&
-        decodeQuickAccessSecret(entry.password) === password
-      ) || null;
-    }
-
-    function openOfflineLocalSession(email, password) {
-      const normalizedEmail = normalizeEmail(email);
-      if (!normalizedEmail) return false;
-      const trustedEntry = findQuickAccessEntry(normalizedEmail, password);
-      if (!trustedEntry) {
-        safeSetText('auth-status', 'Sem internet. Para entrar offline, use um acesso rápido salvo neste aparelho.');
-        return false;
-      }
-      currentSessionUser = null;
-      loadedSessionUserId = null;
-      currentAccessProfile = null;
-      currentAllowedAccess = null;
-      resetVisibleStateForAccount({ email: normalizedEmail }, 'Carregando dados locais...');
-      const loadedAt = DB.load(normalizedEmail);
-      const hasLocalData = countStateTransactions(State) > 0 || Boolean(State.profile?.email);
-      if (!hasLocalData) {
-        resetVisibleStateForAccount(null, 'Nenhum dado local encontrado.');
-        openLoginScreen('Nenhum dado local foi encontrado para esse acesso rápido.');
-        return false;
-      }
-      setLastActiveEmail(State.profile?.email || normalizedEmail);
-      refreshAppViews();
-      renderGoals();
-      populateAccountOptions();
-      updateAllAvatars();
-      showAuthShell(false);
-      setSyncStatus(
-        'Modo offline ativo.',
-        'warn',
-        `${loadedAt ? 'Dados locais carregados com sucesso.' : 'Dados locais carregados.'} Quando a internet voltar, entre novamente para sincronizar com a nuvem.`
-      );
-      safeSetText('auth-status', 'Modo offline liberado neste aparelho.');
-      return true;
     }
 
     function showLocalModeIfAvailable() {
@@ -3480,6 +3464,10 @@
     }
 
     function useQuickAccess(id) {
+      if (!navigator.onLine) {
+        updateAuthConnectivityState();
+        return;
+      }
       const entry = getQuickAccessEntries().find(item => item.id === id);
       if (!entry) {
         renderQuickAccessList();
@@ -4462,8 +4450,7 @@
       safeSetText('auth-status', 'Entrando...');
 
       if (!navigator.onLine) {
-        if (openOfflineLocalSession(email, password)) return;
-        safeSetText('auth-status', 'Sem internet. Use um acesso rápido salvo neste aparelho para abrir seus dados locais.');
+        updateAuthConnectivityState();
         return;
       }
 
@@ -4979,9 +4966,10 @@
         'warn',
         navigator.onLine
           ? 'O login automático foi desativado neste aparelho.'
-          : 'Sem internet no momento. Use um acesso rápido salvo neste aparelho para abrir seus dados locais.'
+          : 'Sem internet no momento. Conecte-se para entrar no aplicativo.'
       );
       switchAuthMode('login');
+      updateAuthConnectivityState();
 
       client.auth.onAuthStateChange(async (event, session) => {
         if (isChangingPassword && event === 'USER_UPDATED') return;
@@ -7823,6 +7811,7 @@
       renderReports();
       updateAllAvatars();
       initCloudAuth();
+      updateAuthConnectivityState();
       
       window.addEventListener('focus', () => {
         resumeForegroundWork();
@@ -7841,6 +7830,7 @@
 
       window.addEventListener('online', () => {
         cloudConnectionStale = true;
+        updateAuthConnectivityState();
         if (currentSessionUser && !accessLockActive) {
           setSyncStatus('Internet restabelecida. Enviando alterações pendentes...', 'saving');
           syncCloudNow(true).catch(error => console.warn('Falha ao sincronizar ao voltar internet:', error));
@@ -7852,6 +7842,7 @@
 
       window.addEventListener('offline', () => {
         pauseBackgroundWork();
+        updateAuthConnectivityState();
         setSyncStatus('Sem internet. As alterações locais ficam salvas neste aparelho.', 'warn');
       });
 
