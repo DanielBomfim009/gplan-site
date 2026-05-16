@@ -571,6 +571,7 @@
     .budget-sub { margin-top: 4px; font-size: 11px; color: #6b8a99; }
     .budget-input { width: 132px; }
     .settings-action-btn { width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(0, 180, 160, 0.12); color: #00b4a0; border: 1px solid rgba(0, 180, 160, 0.18); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .settings-action-btn.secondary { background: rgba(19, 42, 60, 0.95); color: #d7eef2; border-color: rgba(107, 138, 153, 0.22); }
     .settings-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     .settings-tabs::-webkit-scrollbar { display: none; }
     .settings-tab-btn { flex: 0 0 auto; padding: 10px 13px; border-radius: 999px; background: rgba(19, 42, 60, 0.82); color: #86a8b7; border: 1px solid rgba(0, 180, 160, 0.08); font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
@@ -1771,6 +1772,7 @@
           <div id="settings-access-summary" class="access-summary-box hidden"></div>
           <div class="space-y-2">
             <button onclick="syncCloudNow()" class="settings-action-btn">Sincronizar Agora</button>
+            <button onclick="openLoginScreen('Entre novamente para carregar seus dados da nuvem. Seus dados locais continuam salvos neste aparelho.')" class="settings-action-btn secondary">Entrar Novamente</button>
             <button onclick="logoutCloud()" class="w-full p-3 rounded-xl bg-expense/10 hover:bg-expense/20 transition-colors text-expense font-semibold">Sair da Conta</button>
           </div>
         </div>
@@ -3185,10 +3187,7 @@
     }
 
     function returnToLogin() {
-      accessLockActive = false;
-      document.getElementById('access-lock-shell')?.classList.add('hidden');
-      showAuthShell(true);
-      switchAuthMode('login');
+      openLoginScreen();
     }
 
     function switchSettingsTab(tab = 'profile', { scroll = true } = {}) {
@@ -3310,6 +3309,15 @@
       safeSetText('auth-submit-btn', 'Entrar');
       safeSetText('auth-status', 'Entre com o e-mail liberado pelo suporte e a senha temporária recebida.');
       renderQuickAccessList();
+    }
+
+    function openLoginScreen(statusText = 'Entre com sua conta para carregar os dados da nuvem.') {
+      accessLockActive = false;
+      document.getElementById('access-lock-shell')?.classList.add('hidden');
+      showAuthShell(true);
+      switchAuthMode('login');
+      safeSetText('auth-status', statusText);
+      setTimeout(() => document.getElementById('auth-email')?.focus(), 80);
     }
 
     function showLocalModeIfAvailable() {
@@ -4533,9 +4541,7 @@
       renderAccessSummary(null);
       renderSubscriptionSummary(null);
       resetVisibleStateForAccount(null, 'Sessão encerrada.');
-      if (!showLocalModeIfAvailable()) {
-        showAuthShell(true);
-      }
+      openLoginScreen('Sessão encerrada. Entre novamente para carregar seus dados da nuvem.');
     }
 
     function queueCloudSave(delay = 800) {
@@ -4669,7 +4675,7 @@
       if (!client || !currentSessionUser) {
         if (!silent) {
           setSyncStatus('Salvo neste aparelho. Nuvem indisponível.', 'warn', 'Entre na conta e confira sua conexão para enviar os dados locais.');
-          safeSetText('auth-status', 'Entre na conta para enviar seus dados locais para a nuvem.');
+          openLoginScreen('Entre na conta para enviar seus dados locais para a nuvem.');
           showToast('Sem sessão ativa na nuvem. Seus dados continuam salvos neste aparelho.', 'error');
         }
         return false;
