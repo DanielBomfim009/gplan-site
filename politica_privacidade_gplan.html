@@ -5,12 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Política de Privacidade | GPlan</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07141d;
+      --panel: #0d2230;
+      --line: rgba(23, 199, 187, .14);
+      --text: #f4fbfd;
+      --muted: #bdd3db;
+      --brand: #17c7bb;
+      --soft: rgba(23, 199, 187, .12);
+    }
     body {
       margin: 0;
       font-family: Inter, Arial, sans-serif;
-      background: #08151e;
-      color: #f4fbfd;
+      background:
+        radial-gradient(circle at 10% -5%, rgba(23, 199, 187, .16), transparent 24%),
+        linear-gradient(180deg, #06141d 0%, #08151e 100%);
+      color: var(--text);
       line-height: 1.6;
     }
     .wrap {
@@ -23,19 +34,52 @@
       border-bottom: 1px solid rgba(255,255,255,.08);
       margin-bottom: 24px;
     }
-    h1 { font-size: 34px; margin: 0; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: #d8fbf7;
+      text-decoration: none;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+    h1 { font-size: 34px; line-height: 1.05; }
     h2 { font-size: 22px; margin: 28px 0 10px; }
-    p, li { color: #c2d9e1; font-size: 16px; }
-    a { color: #7de7dd; text-decoration: none; }
+    p, li { color: var(--muted); font-size: 16px; }
+    a { color: #7de7dd; text-decoration: none; overflow-wrap: anywhere; }
     ul { padding-left: 20px; }
-    .back { display: inline-block; margin-top: 8px; color: #7de7dd; }
+    .contact-box {
+      margin-top: 28px;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(13, 34, 48, .9), rgba(8, 24, 35, .92));
+      border: 1px solid rgba(255,255,255,.05);
+    }
+    .contact-box strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .contact-box p + p {
+      margin-top: 8px;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 28px; }
+      h2 { font-size: 20px; }
+      p, li { font-size: 15px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="head">
+      <a class="back" href="/">Voltar para a página oficial do GPlan</a>
       <h1>Política de Privacidade</h1>
-      <a class="back" href="pagina_venda_gplan.html">Voltar para a página do GPlan</a>
     </div>
 
     <p>Esta Política de Privacidade descreve, de forma geral, como os dados podem ser tratados no uso do GPlan.</p>
@@ -62,10 +106,16 @@
     <p>O usuário pode solicitar atualização, correção ou exclusão de sua conta, observadas obrigações técnicas, operacionais e legais aplicáveis.</p>
 
     <h2>8. Contato</h2>
-    <p>Antes da publicação oficial, substitua esta seção pelo seu canal real de atendimento, como e-mail e WhatsApp de suporte.</p>
+    <p>O atendimento oficial do GPlan está disponível pelos canais informados no site oficial e na comunicação enviada ao cliente.</p>
 
     <h2>9. Atualizações</h2>
     <p>Esta política pode ser ajustada para refletir melhorias, mudanças operacionais ou exigências legais da plataforma de venda adotada.</p>
+
+    <div class="contact-box">
+      <strong>Suporte oficial</strong>
+      <p><a href="mailto:suporte.gplanapp@outlook.com.br">suporte.gplanapp@outlook.com.br</a></p>
+      <p><a href="tel:+5581996894413">(81) 99689-4413</a></p>
+    </div>
   </div>
 </body>
 </html>

@@ -5,12 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Termos de Uso | GPlan</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07141d;
+      --panel: #0d2230;
+      --line: rgba(23, 199, 187, .14);
+      --text: #f4fbfd;
+      --muted: #bdd3db;
+      --brand: #17c7bb;
+      --soft: rgba(23, 199, 187, .12);
+    }
     body {
       margin: 0;
       font-family: Inter, Arial, sans-serif;
-      background: #08151e;
-      color: #f4fbfd;
+      background:
+        radial-gradient(circle at 10% -5%, rgba(23, 199, 187, .16), transparent 24%),
+        linear-gradient(180deg, #06141d 0%, #08151e 100%);
+      color: var(--text);
       line-height: 1.6;
     }
     .wrap {
@@ -23,19 +34,52 @@
       border-bottom: 1px solid rgba(255,255,255,.08);
       margin-bottom: 24px;
     }
-    h1 { font-size: 34px; margin: 0; }
+    .back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      color: #d8fbf7;
+      text-decoration: none;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+    h1 { font-size: 34px; line-height: 1.05; }
     h2 { font-size: 22px; margin: 28px 0 10px; }
-    p, li { color: #c2d9e1; font-size: 16px; }
-    a { color: #7de7dd; text-decoration: none; }
+    p, li { color: var(--muted); font-size: 16px; }
+    a { color: #7de7dd; text-decoration: none; overflow-wrap: anywhere; }
     ul { padding-left: 20px; }
-    .back { display: inline-block; margin-top: 8px; color: #7de7dd; }
+    .contact-box {
+      margin-top: 28px;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(13, 34, 48, .9), rgba(8, 24, 35, .92));
+      border: 1px solid rgba(255,255,255,.05);
+    }
+    .contact-box strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .contact-box p + p {
+      margin-top: 8px;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 28px; }
+      h2 { font-size: 20px; }
+      p, li { font-size: 15px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="head">
+      <a class="back" href="/">Voltar para a página oficial do GPlan</a>
       <h1>Termos de Uso</h1>
-      <a class="back" href="pagina_venda_gplan.html">Voltar para a página do GPlan</a>
     </div>
 
     <p>Estes Termos de Uso descrevem as condições gerais para acesso e utilização do GPlan.</p>
@@ -44,10 +88,10 @@
     <p>O GPlan é uma ferramenta digital voltada à organização financeira pessoal, permitindo registros manuais, acompanhamento mensal, controle por status, metas e relatórios.</p>
 
     <h2>2. Natureza do serviço</h2>
-    <p>O GPlan não oferece consultoria financeira, jurídica, contábil ou recomendação de investimentos. O serviço é destinado a organização e acompanhamento das informações lançadas pelo próprio usuário.</p>
+    <p>O GPlan não oferece consultoria financeira, jurídica, contábil ou recomendação de investimentos. O serviço é destinado à organização e ao acompanhamento das informações lançadas pelo próprio usuário.</p>
 
     <h2>3. Acesso individual</h2>
-    <p>Cada compra corresponde a um acesso individual, limitado ao plano contratado e à sua validade definida.</p>
+    <p>Cada compra corresponde a um acesso individual, limitado ao plano contratado e à validade definida no momento da liberação.</p>
 
     <h2>4. Responsabilidade do usuário</h2>
     <ul>
@@ -57,7 +101,7 @@
     </ul>
 
     <h2>5. Disponibilidade</h2>
-    <p>O serviço poderá passar por ajustes, atualizações, correções, manutenções e melhorias técnicas ao longo do tempo.</p>
+    <p>O serviço pode passar por ajustes, atualizações, correções, manutenções e melhorias técnicas ao longo do tempo.</p>
 
     <h2>6. Suspensão ou encerramento</h2>
     <p>O acesso pode ser suspenso, bloqueado ou encerrado em caso de vencimento do plano, descumprimento destes termos, uso indevido ou razões técnicas e administrativas.</p>
@@ -69,10 +113,16 @@
     <p>O GPlan não garante ganhos financeiros, economia específica, resultado contábil ou desempenho patrimonial. As decisões do usuário permanecem sob sua própria responsabilidade.</p>
 
     <h2>9. Suporte</h2>
-    <p>No lançamento, o suporte pode ocorrer de forma manual. Antes da publicação oficial, substitua esta seção pelos seus canais reais de atendimento.</p>
+    <p>O suporte oficial do GPlan é realizado pelos canais informados na página oficial e na comunicação de liberação do acesso.</p>
 
     <h2>10. Atualizações dos termos</h2>
     <p>Estes termos podem ser alterados para refletir melhorias do produto, ajustes operacionais ou exigências legais e comerciais.</p>
+
+    <div class="contact-box">
+      <strong>Suporte oficial</strong>
+      <p><a href="mailto:suporte.gplanapp@outlook.com.br">suporte.gplanapp@outlook.com.br</a></p>
+      <p><a href="tel:+5581996894413">(81) 99689-4413</a></p>
+    </div>
   </div>
 </body>
 </html>
